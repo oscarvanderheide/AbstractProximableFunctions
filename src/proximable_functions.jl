@@ -1,6 +1,6 @@
 #: Utilities for norm functions
 
-export NullProx, null_prox, MixedNorm, MixedNormBatch, ptdot, ptnorm1, ptnorm2, ptnormInf, mixed_norm, proj_options
+export NullProx, null_prox, MixedNorm, MixedNormBatch, ptdot, ptnorm1, ptnorm2, ptnormInf, mixed_norm
 
 
 # Null proximable function
@@ -14,42 +14,22 @@ proxy!(p::AbstractArray{CT,N}, ::T, ::NullProx{CT,N}, q::AbstractArray{CT,N}) wh
 project!(p::AbstractArray{CT,N}, ::T, ::NullProx{CT,N}, q::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = (q .= p)
 
 
-# Options for projection-related operations
-
-struct ProjOptions
-    maxiter::Union{Nothing,Int64}
-    xrtol::Union{Nothing,Real}
-end
-
-proj_options(; maxiter::Union{Nothing,Int64}=nothing, xrtol::Union{Nothing,Real}=nothing) = ProjOptions(maxiter, xrtol)
-
-
 # Mixed norm
 
 struct MixedNorm{T,D,N1,N2}<:ProximableFunction{T,D}
-    proj_opt::ProjOptions
+    pareto_tol::Union{Nothing,Real}
 end
 
-function mixed_norm(T::DataType, D::Number, N1::Number, N2::Number; proj_opt::Union{Nothing,ProjOptions}=nothing)
-    proj_opt === nothing && (proj_opt = proj_options())
-    (D == 1) && return MixedNorm{T,2,N1,N2}(proj_opt)
-    (D == 2) && return MixedNorm{T,3,N1,N2}(proj_opt)
-    (D == 3) && return MixedNorm{T,4,N1,N2}(proj_opt)
-end
+mixed_norm(T::DataType, D::Number, N1::Number, N2::Number; pareto_tol::Union{Nothing,Real}=nothing) = MixedNorm{T,D+1,N1,N2}(pareto_tol)
 
 
 # Mixed norm (batch)
 
 struct MixedNormBatch{T,D,N1,N2}<:ProximableFunction{T,D}
-    proj_opt::ProjOptions
+    pareto_tol::Union{Nothing,Real}
 end
 
-function mixed_norm_batch(T::DataType, D::Number, N1::Number, N2::Number; proj_opt::Union{Nothing,ProjOptions}=nothing)
-    proj_opt === nothing && (proj_opt = proj_options())
-    (D == 2) && return MixedNormBatch{T,4,N1,N2}(proj_opt)
-    (D == 3) && return MixedNormBatch{T,5,N1,N2}(proj_opt)
-    throw("Dimension not supported")
-end
+mixed_norm_batch(T::DataType, D::Number, N1::Number, N2::Number; pareto_tol::Union{Nothing,Real}=nothing) = MixedNormBatch{T,D+2,N1,N2}(pareto_tol)
 
 
 # L22 norm
@@ -77,7 +57,7 @@ end
 function project!(p::AbstractArray{CT,N}, ε::T, g::MixedNorm{CT,N,2,1}, q::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}}
     ptn = ptnorm2(p; η=eps(T))
     sum(ptn) <= ε && (return q .= p)
-    λ = pareto_search_proj21(ptn, ε; xrtol=g.proj_opt.xrtol, maxiter=g.proj_opt.maxiter)
+    λ = pareto_search_proj21(ptn, ε; xrtol=g.pareto_tol)
     return proxy!(p, λ, g, q; ptn=ptn)
 end
 
@@ -118,7 +98,7 @@ end
 
 # Pareto-search routines
 
-pareto_search_proj21(ptn::AbstractArray{T,N}, ε::T; maxiter::Union{Nothing,Int64}=nothing, xrtol::Union{Nothing,T}=nothing) where {T<:Real,N} = T(solve(ZeroProblem(λ -> obj_pareto_search_proj21(λ, ptn, ε), (T(0), maximum(ptn))), Roots.Brent(); xreltol=isnothing(xrtol) ? eps(T) : xrtol, maxevals=isnothing(maxiter) ? length(ptn) : maxiter))
+pareto_search_proj21(ptn::AbstractArray{T,N}, ε::T; xrtol::Union{Nothing,T}=nothing) where {T<:Real,N} = T(solve(ZeroProblem(λ -> obj_pareto_search_proj21(λ, ptn, ε), (T(0), maximum(ptn))), Roots.Brent(); xreltol=isnothing(xrtol) ? eps(T) : xrtol))
 
 obj_pareto_search_proj21(λ::T, ptn::AbstractArray{T,N}, ε::T) where {T<:Real,N} = sum(Flux.relu.(ptn.-λ))-ε
 

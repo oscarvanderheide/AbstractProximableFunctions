@@ -1,7 +1,6 @@
 #: Abstract functional types
 
-export AbstractOptimizer, MinimizableFunction, DifferentiableFunction, ProximableFunction, ProjectionableSet
-export minimize, minimize!, proxy, proxy!, project, project!, grad, grad!
+export AbstractOptimizer, MinimizableFunction, DifferentiableFunction, ProximableFunction, ProjectionableSet, funeval, funeval!, minimize, minimize!, proxy, proxy!, project, project!
 
 
 # Abstract type declarations
@@ -18,17 +17,17 @@ minimize(fun::MinimizableFunction{T,N}, x0::AbstractArray{T,N}, opt::AbstractOpt
 
 
 """Expected behavior for DifferentiableFunction:
-- fval::T = grad!(f::DifferentiableFunction{DT}, x::DT, g::DT) where {T,N,DT<:AbstractArray{T,N}} 
+- fval::T = funeval!(f::DifferentiableFunction{DT}, x::DT; gradient::DT, eval::Bool) where {T,N,DT<:AbstractArray{T,N}} 
 """
 abstract type DifferentiableFunction{T,N}<:MinimizableFunction{T,N} end
 
-function grad(f::DifferentiableFunction{T,N}, x::AbstractArray{T,N}) where {T,N}
-    g = similar(x)
-    fval = grad!(f, x, g)
-    return fval, g
+function funeval(fun::DifferentiableFunction{T,N}, x::AbstractArray{T,N}; gradient::Bool=false, eval::Bool=true) where {T,N}
+    gradient ? (g = similar(x)) : (g = nothing)
+    fval = funeval!(fun, x; gradient=g, eval=eval)
+    gradient ? (return (fval, g)) : (return fval)
 end
 
-(f::DifferentiableFunction{T,N})(x::AbstractArray{T,N}) where {T,N} = grad!(f, x, nothing)
+(fun::DifferentiableFunction{T,N})(x::AbstractArray{T,N}; gradient::Bool=false, eval::Bool=true) where {T,N} = funeval(fun, x; gradient=gradient, eval=eval)
 
 """Expected behavior for ProximableFunction:
 - proxy!(y::AbstractArray{T,N}, λ::T, g::ProximableFunction{T,N}, x::AbstractArray{T,N}) where {T,N}

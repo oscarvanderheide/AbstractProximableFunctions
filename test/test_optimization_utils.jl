@@ -10,11 +10,11 @@ xtrue = A\b
 
 # FISTA
 x0 = randn(T, 100)
-L = spectral_radius(A'*A, randn(T,100); niter=1000)
+L = T(1.1)*spectral_radius(A'*A; niter=1000)
 g = null_prox(T, 1)
 Nesterov = true
 # Nesterov = false
-opt_fista = FISTA_optimizer(L; prox=g, Nesterov=Nesterov, reset_counter=100)
+opt_fista = FISTA_optimizer(L; prox=g, Nesterov=Nesterov, reset_counter=10, verbose=false)
 niter = 100
 fval_fista = Array{T,1}(undef, niter)
 x = deepcopy(x0)
@@ -29,6 +29,6 @@ end
 # Via minimize routine
 Aop = linear_operator(T, size(xtrue), size(xtrue), x->A*x, y->A'*y)
 f = leastsquares_misfit(Aop, b)
-opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, reset_counter=100, niter=niter)
+opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
 x_ = minimize(f+g, x0, opt_fista)
 @test x_ ≈ xtrue rtol=1e-5

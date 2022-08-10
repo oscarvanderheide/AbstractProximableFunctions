@@ -60,7 +60,7 @@ min_x f(x)+g(x)
 Reference: Beck, A., and Teboulle, M., 2009, A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems
 https://www.ceremade.dauphine.fr/~carlier/FISTA
 """
-function minimize!(fun::DifferentiableFunction{CT,N}, initial_estimate::AbstractArray{CT,N}, opt::OptimizerFISTA{T,PT}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:ProximableFunction{T,N}}
+function minimize!(fun::DifferentiableFunction{CT,N}, initial_estimate::AbstractArray{CT,N}, opt::OptimizerFISTA{T,PT}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N}}
 
     # Initialization
     x .= initial_estimate
@@ -70,21 +70,25 @@ function minimize!(fun::DifferentiableFunction{CT,N}, initial_estimate::Abstract
 
     # Optimization loop
     for i = 1:opt.niter
-        opt.verbose ? (fval[i] = grad!(fun, x, g; eval=true)) : grad!(fun, x, g; eval=false)
+        fval_i = funeval!(fun, x; gradient=g, eval=opt.verbose); opt.verbose && (fval[i] = fval_i)
         Flux.Optimise.update!(opt, x, g)
         opt.verbose && (@info string("iter: ", i, ", fval: ", fval[i]))
     end
 
-    opt.verbose ? (return (x, fval)) : (return x)
+    opt.verbose ? (return (fval, x)) : (return x)
 
 end
 
-minimize!(fun::DiffPlusProxFun{CT,N}, initial_estimate::AbstractArray{CT,N}, opt::OptimizerFISTA{T,Nothing}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = minimize!(fun.f, initial_estimate, set_proxy(opt, fun.g), x)
+minimize!(fun::DiffPlusProxFun{CT,N}, initial_estimate::AbstractArray{CT,N}, opt::OptimizerFISTA{T,Nothing}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = minimize!(fun.diff, initial_estimate, set_proxy(opt, fun.prox), x)
 
 
 # Other utils
 
-function spectral_radius(A::AT, x::AbstractArray{T,N}; niter::Int64=10) where {T,N,AT<:Union{AbstractMatrix{T},AbstractLinearOperator{T,N,N}}}
+function spectral_radius(A::AT; x::Union{Nothing,AbstractArray{T,N}}=nothing, niter::Int64=10) where {T,N,AT<:Union{AbstractMatrix{T},AbstractLinearOperator{T,N,N}}}
+    if isnothing(x)
+        A isa AbstractMatrix && (x = randn(T, size(A,2)))
+        A isa AbstractLinearOperator && (x = randn(T, domain_size(A)))
+    end
     x = x/norm(x)
     y = similar(x)
     ρ = real(T)(0)

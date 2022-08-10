@@ -1,4 +1,5 @@
-using LinearAlgebra, FastSolversForWeightedTV, AbstractLinearOperators, Test
+using LinearAlgebra, ConvexOptimizationUtils, AbstractLinearOperators, Test, Random
+Random.seed!(123)
 include("test_utils.jl")
 
 # Random input
