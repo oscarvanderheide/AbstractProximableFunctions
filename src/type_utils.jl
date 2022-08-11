@@ -91,7 +91,11 @@ proxy_objfun(λ::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComp
 proxy_objfun(λ::T, g::ProximableFunction{CT,N}, opt::AbstractOptimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = ProxyObjFun{CT,N}(λ, g, opt)
 
 function funeval!(f::ProxyObjFun{CT,N}, y::AbstractArray{CT,N}; gradient::Union{Nothing,AbstractArray{CT,N}}=nothing, eval::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T}}
-    f.opt === nothing ? (x = proxy(y, f.λ, f.g)) : (x = proxy(y, f.λ, f.g, f.opt))
+    if isnothing(f.opt)
+        x = proxy(y, f.λ, f.g)
+    else
+        f.opt.verbose ? ((_, x) = proxy(y, f.λ, f.g, f.opt)) : (x = proxy(y, f.λ, f.g, f.opt))
+    end
     ~isnothing(gradient) && (gradient .= y-x)
     eval ? (return T(0.5)*norm(x-y)^2+f.λ*f.g(x)) : (return nothing)
 end
@@ -107,7 +111,11 @@ proj_objfun(ε::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrCompl
 proj_objfun(ε::T, g::ProximableFunction{CT,N}, opt::AbstractOptimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = ProjObjFun{CT,N}(ε, g, opt)
 
 function funeval!(f::ProjObjFun{CT,N}, y::AbstractArray{CT,N}; gradient::Union{Nothing,AbstractArray{CT,N}}=nothing, eval::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T}}
-    f.opt === nothing ? (x = project(y, f.ε, f.g)) : (x = project(y, f.ε, f.g, f.opt))
+    if isnothing(f.opt)
+        x = project(y, f.ε, f.g)
+    else
+        f.opt.verbose ? ((_, x) = project(y, f.ε, f.g, f.opt)) : (x = project(y, f.ε, f.g, f.opt))
+    end
     ~isnothing(gradient) && (gradient .= y-x)
     eval ? (return T(0.5)*norm(x-y)^2) : (return nothing)
 end
