@@ -134,8 +134,8 @@ end
 
 leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,PT}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = minimize!(leastsquares_misfit(A, b), initial_estimate, opt, x)
 
-leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,PT}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = leastsquares_solve!(A, b, initial_estimate, opt, similar(initial_estimate))
-
 leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,Nothing}, x::AbstractArray{CT,N1}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, initial_estimate, set_proxy(opt, prox), x)
 
-leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,Nothing}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, initial_estimate, opt, similar(initial_estimate))
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,PT}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = leastsquares_solve!(A, b, initial_estimate, opt, similar(initial_estimate))
+
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,Nothing}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = leastsquares_solve!(A, b, initial_estimate, set_proxy(opt, prox), similar(initial_estimate))
