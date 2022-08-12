@@ -37,9 +37,9 @@ x_ = minimize(f+g, x0, opt_fista)
 
 # Via least-squares routines
 opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
-x_ = leastsquares_solve(Aop, b, opt_fista, x0; prox=g)
+x_ = leastsquares_solve(Aop, b, x0, opt_fista; prox=g)
 @test x_ ≈ xtrue rtol=rtol
 
 opt_fista = FISTA_optimizer(L; prox=g, Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
-x_ = leastsquares_solve(Aop, b, opt_fista, x0)
+x_ = leastsquares_solve(Aop, b, x0, opt_fista)
 @test x_ ≈ xtrue rtol=rtol
