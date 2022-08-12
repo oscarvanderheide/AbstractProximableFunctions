@@ -1,7 +1,7 @@
 # Optimization utilities:
 # - FISTA: Beck, A., and Teboulle, M., 2009, A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems
 
-export OptimizerFISTA, FISTA_optimizer, reset!, minimize!, linesearch_backtracking, spectral_radius, leastsquares_solve!, leastsquares_solve, verbose, fun_history
+export OptimizerFISTA, FISTA_optimizer, reset!, minimize!, linesearch_backtracking, spectral_radius, leastsquares_solve!, leastsquares_solve, verbose, fun_history, set_proxy
 
 
 ## FISTA options
