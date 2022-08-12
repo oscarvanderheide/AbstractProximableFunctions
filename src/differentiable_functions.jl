@@ -16,7 +16,7 @@ end
 
 leastsquares_misfit(A::AbstractLinearOperator{T,N1,N2}, y::AbstractArray{T,N2}) where {T,N1,N2} = LeastSquaresMisfit{T,N1,N2}(A, y)
 
-function funeval!(f::LeastSquaresMisfit{T,N1,N2}, x::AbstractArray{T,N1}; gradient::Union{Nothing,AbstractArray{T,N1}}=nothing, eval::Bool=true) where {T,N1,N2}
+function funeval!(f::LeastSquaresMisfit{CT,N1,N2}, x::AbstractArray{CT,N1}; gradient::Union{Nothing,AbstractArray{CT,N1}}=nothing, eval::Bool=true) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
     r = f.linear_operator*x-f.known_term
     eval ? (fval = T(0.5)*norm(r)^2) : (fval = nothing)
     ~isnothing(gradient) && (gradient .= f.linear_operator'*r)

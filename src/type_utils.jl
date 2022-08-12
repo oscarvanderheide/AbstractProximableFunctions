@@ -81,21 +81,16 @@ proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArra
 
 # Proximable function evaluation
 
-struct ProxyObjFun{T,N} <: DifferentiableFunction{T,N}
+struct ProxyObjFun{T,N}<:DifferentiableFunction{T,N}
     λ::Real
     g::ProximableFunction{T,N}
-    opt::Union{Nothing,AbstractOptimizer}
 end
 
-proxy_objfun(λ::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = ProxyObjFun{CT,N}(λ, g, nothing)
-proxy_objfun(λ::T, g::ProximableFunction{CT,N}, opt::AbstractOptimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = ProxyObjFun{CT,N}(λ, g, opt)
+proxy_objfun(λ::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = ProxyObjFun{CT,N}(λ, g)
+proxy_objfun(λ::T, g::WeightedProximableFun{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = ProxyObjFun{CT,N}(λ, g)
 
 function funeval!(f::ProxyObjFun{CT,N}, y::AbstractArray{CT,N}; gradient::Union{Nothing,AbstractArray{CT,N}}=nothing, eval::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T}}
-    if isnothing(f.opt)
-        x = proxy(y, f.λ, f.g)
-    else
-        f.opt.verbose ? ((_, x) = proxy(y, f.λ, f.g, f.opt)) : (x = proxy(y, f.λ, f.g, f.opt))
-    end
+    x = proxy(y, f.λ, f.g)
     ~isnothing(gradient) && (gradient .= y-x)
     eval ? (return T(0.5)*norm(x-y)^2+f.λ*f.g(x)) : (return nothing)
 end
@@ -104,18 +99,13 @@ end
 struct ProjObjFun{T,N}<:DifferentiableFunction{T,N}
     ε::Real
     g::ProximableFunction{T,N}
-    opt::Union{Nothing,AbstractOptimizer}
 end
 
-proj_objfun(ε::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = ProjObjFun{CT,N}(ε, g, nothing)
-proj_objfun(ε::T, g::ProximableFunction{CT,N}, opt::AbstractOptimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = ProjObjFun{CT,N}(ε, g, opt)
+proj_objfun(ε::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = ProjObjFun{CT,N}(ε, g)
+proj_objfun(ε::T, g::WeightedProximableFun{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = ProjObjFun{CT,N}(ε, g)
 
 function funeval!(f::ProjObjFun{CT,N}, y::AbstractArray{CT,N}; gradient::Union{Nothing,AbstractArray{CT,N}}=nothing, eval::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T}}
-    if isnothing(f.opt)
-        x = project(y, f.ε, f.g)
-    else
-        f.opt.verbose ? ((_, x) = project(y, f.ε, f.g, f.opt)) : (x = project(y, f.ε, f.g, f.opt))
-    end
+    x = project(y, f.ε, f.g)
     ~isnothing(gradient) && (gradient .= y-x)
     eval ? (return T(0.5)*norm(x-y)^2) : (return nothing)
 end

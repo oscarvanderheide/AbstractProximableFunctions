@@ -66,21 +66,21 @@ y = randn(T, n...); flag_gpu && (y = y |> gpu)
 v = randn(T, n..., 3)
 A = linear_operator(T, n, (n...,3), x->v.*x, y->dropdims(sum(conj(v).*y; dims=4); dims=4))
 ρ = 1.01*spectral_radius(A*A'; niter=200)
-opt = FISTA_optimizer(ρ; Nesterov=true, niter=400, reset_counter=10, verbose=false)
-for g = [mixed_norm(T,3,2,1)∘A, mixed_norm(T,3,2,2)∘A, mixed_norm(T,3,2,Inf)∘A]
+opt = FISTA_optimizer(ρ; Nesterov=true, niter=400, reset_counter=10, verbose=false, fun_history=false)
+for g = [weighted_prox(mixed_norm(T,3,2,1), A, opt), weighted_prox(mixed_norm(T,3,2,2), A, opt), weighted_prox(mixed_norm(T,3,2,Inf), A, opt)]
 
     # Gradient test (proxy)
     λ = 0.5*norm(y)^2/g(y)
-    fun = proxy_objfun(λ, g, opt)
+    fun = proxy_objfun(λ, g)
     test_grad(fun, y; step=t, rtol=rtol)
 
     # Projection test
     ε = 0.1*g(y)
-    x = project(y, ε, g, opt)
+    local x = project(y, ε, g)
     @test g(x) ≈ ε rtol=rtol
 
     # Gradient test (projection)
-    fun = proj_objfun(ε, g, opt)
+    fun = proj_objfun(ε, g)
     test_grad(fun, y; step=t, rtol=rtol)
 
 end

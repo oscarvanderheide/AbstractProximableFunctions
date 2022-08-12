@@ -1,7 +1,7 @@
 # Optimization utilities:
 # - FISTA: Beck, A., and Teboulle, M., 2009, A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems
 
-export OptimizerFISTA, FISTA_optimizer, reset!, minimize!, linesearch_backtracking, spectral_radius, leastsquares_solve!, leastsquares_solve
+export OptimizerFISTA, FISTA_optimizer, reset!, minimize!, linesearch_backtracking, spectral_radius, leastsquares_solve!, leastsquares_solve, verbose, fun_history
 
 
 ## FISTA options
@@ -15,16 +15,33 @@ mutable struct OptimizerFISTA{T,PT}<:AbstractOptimizer
     verbose::Bool
     t::T
     counter::Union{Nothing,Integer}
+    fun_history::Union{Nothing,AbstractVector{T}}
 end
 
-FISTA_optimizer(L::T; prox::PT=nothing, Nesterov::Bool=true, reset_counter::Union{Nothing,Integer}=nothing, niter::Union{Nothing,Integer}=nothing, verbose::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T},PT<:Union{Nothing,ProximableFunction{CT,N}}} = OptimizerFISTA{T,PT}(L, prox, Nesterov, reset_counter, niter, verbose, T(1), isnothing(reset_counter) ? nothing : 0)
+function FISTA_optimizer(L::T;
+                         prox::PT=nothing,
+                         Nesterov::Bool=true,
+                         reset_counter::Union{Nothing,Integer}=nothing,
+                         niter::Union{Nothing,Integer}=nothing,
+                         verbose::Bool=false,
+                         fun_history::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T},PT<:Union{Nothing,ProximableFunction{CT,N}}}
+    (fun_history && ~isnothing(niter)) ? (fval = Array{T,1}(undef,niter)) : (fval = nothing)
+    t = T(1)
+    counter = isnothing(reset_counter) ? nothing : 0
+    return OptimizerFISTA{T,PT}(L, prox, Nesterov, reset_counter, niter, verbose, t, counter, fval)
+end
 
-function reset!(opt::OptimizerFISTA)
+function reset!(opt::OptimizerFISTA{T,PT}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N}}
     opt.t = 1
     ~isnothing(opt.counter) && (opt.counter = 0)
+    ~isnothing(opt.fun_history) && ~isnothing(opt.niter) && (opt.fun_history .= Array{T,1}(undef,opt.niter))
 end
 
-set_proxy(opt::OptimizerFISTA{T,Nothing}, prox::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = OptimizerFISTA{T,typeof(prox)}(opt.Lipschitz_constant, prox, opt.Nesterov, opt.reset_counter, opt.niter, opt.verbose, opt.t, opt.counter)
+set_proxy(opt::OptimizerFISTA{T,Nothing}, prox::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = OptimizerFISTA{T,typeof(prox)}(opt.Lipschitz_constant, prox, opt.Nesterov, opt.reset_counter, opt.niter, opt.verbose, opt.t, opt.counter, opt.fun_history)
+
+verbose(opt::OptimizerFISTA) = opt.verbose
+
+fun_history(opt::OptimizerFISTA) = opt.fun_history
 
 function Flux.Optimise.apply!(opt::OptimizerFISTA{T,PT}, x::AbstractArray{CT,N}, g::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:Union{Nothing,ProximableFunction{CT,N}}}
 
@@ -66,16 +83,16 @@ function minimize!(fun::DifferentiableFunction{CT,N}, initial_estimate::Abstract
     x .= initial_estimate
     g  = similar(x)
     reset!(opt)
-    opt.verbose && (fval = zeros(T,opt.niter))
 
     # Optimization loop
     for i = 1:opt.niter
-        fval_i = funeval!(fun, x; gradient=g, eval=opt.verbose); opt.verbose && (fval[i] = fval_i)
+        fval_i = funeval!(fun, x; gradient=g, eval=opt.verbose || ~isnothing(opt.fun_history))
+        ~isnothing(opt.fun_history) && (opt.fun_history[i] = fval_i)
         Flux.Optimise.update!(opt, x, g)
-        opt.verbose && (@info string("iter: ", i, ", fval: ", fval[i]))
+        opt.verbose && (@info string("iter: ", i, ", fval: ", fval_i))
     end
 
-    opt.verbose ? (return (fval, x)) : (return x)
+    return x
 
 end
 
