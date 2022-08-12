@@ -1,6 +1,8 @@
 using ConvexOptimizationUtils, LinearAlgebra, Flux, Test, AbstractLinearOperators
 import Flux.Optimise: Optimiser, update!
 
+rtol = 1e-5
+
 # Setting linear system
 T = Float64
 Q = qr(randn(T, 100, 100)).Q
@@ -24,11 +26,20 @@ for i = 1:niter
     local g = A'*r
     update!(opt_fista, x, g)
 end
-@test x ≈ xtrue rtol=1e-5
+@test x ≈ xtrue rtol=rtol
 
 # Via minimize routine
 Aop = linear_operator(T, size(xtrue), size(xtrue), x->A*x, y->A'*y)
 f = leastsquares_misfit(Aop, b)
 opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
 x_ = minimize(f+g, x0, opt_fista)
-@test x_ ≈ xtrue rtol=1e-5
+@test x_ ≈ xtrue rtol=rtol
+
+# Via least-squares routines
+opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
+x_ = leastsquares_solve(Aop, b, opt_fista, x0; prox=g)
+@test x_ ≈ xtrue rtol=rtol
+
+opt_fista = FISTA_optimizer(L; prox=g, Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
+x_ = leastsquares_solve(Aop, b, opt_fista, x0)
+@test x_ ≈ xtrue rtol=rtol

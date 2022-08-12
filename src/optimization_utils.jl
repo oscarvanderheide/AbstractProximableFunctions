@@ -1,7 +1,7 @@
 # Optimization utilities:
 # - FISTA: Beck, A., and Teboulle, M., 2009, A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems
 
-export OptimizerFISTA, FISTA_optimizer, reset!, minimize!, linesearch_backtracking, spectral_radius
+export OptimizerFISTA, FISTA_optimizer, reset!, minimize!, linesearch_backtracking, spectral_radius, leastsquares_solve!, leastsquares_solve
 
 
 ## FISTA options
@@ -111,3 +111,14 @@ function linesearch_backtracking(obj::Function, x0::AbstractArray{CT,N}, p::Abst
     return lr
 
 end
+
+
+## Least-squares linear problem routines
+
+leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, opt::OptimizerFISTA{T,PT}, initial_estimate::AbstractArray{CT,N1}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = minimize!(leastsquares_misfit(A, b), initial_estimate, opt, x)
+
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, opt::OptimizerFISTA{T,PT}, initial_estimate::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = leastsquares_solve!(A, b, opt, initial_estimate, similar(initial_estimate))
+
+leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, opt::OptimizerFISTA{T,Nothing}, initial_estimate::AbstractArray{CT,N1}, x::AbstractArray{CT,N1}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, set_proxy(opt, prox), initial_estimate, x)
+
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, opt::OptimizerFISTA{T,Nothing}, initial_estimate::AbstractArray{CT,N1}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, opt, initial_estimate, similar(initial_estimate))
