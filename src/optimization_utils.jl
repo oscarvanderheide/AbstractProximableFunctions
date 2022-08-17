@@ -35,6 +35,7 @@ function reset!(opt::OptimizerFISTA{T,PT}) where {T<:Real,N,CT<:RealOrComplex{T}
     opt.t = 1
     ~isnothing(opt.counter) && (opt.counter = 0)
     ~isnothing(opt.fun_history) && ~isnothing(opt.niter) && (opt.fun_history .= Array{T,1}(undef,opt.niter))
+    return opt
 end
 
 set_proxy(opt::OptimizerFISTA{T,Nothing}, prox::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = OptimizerFISTA{T,typeof(prox)}(opt.Lipschitz_constant, prox, opt.Nesterov, opt.reset_counter, opt.niter, opt.verbose, opt.t, opt.counter, opt.fun_history)
