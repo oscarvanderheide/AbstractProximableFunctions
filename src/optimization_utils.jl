@@ -31,7 +31,7 @@ function FISTA_optimizer(L::T;
     return OptimizerFISTA{T,PT}(L, prox, Nesterov, reset_counter, niter, verbose, t, counter, fval)
 end
 
-function reset!(opt::OptimizerFISTA{T,PT}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N}}
+function reset!(opt::OptimizerFISTA{T,PT}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:Union{Nothing,ProximableFunction{CT,N}}}
     opt.t = 1
     ~isnothing(opt.counter) && (opt.counter = 0)
     ~isnothing(opt.fun_history) && ~isnothing(opt.niter) && (opt.fun_history .= Array{T,1}(undef,opt.niter))
