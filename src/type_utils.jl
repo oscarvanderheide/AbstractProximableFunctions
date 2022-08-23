@@ -1,7 +1,7 @@
 #: Utils
 
 export conjugate, proxy_objfun, proj_objfun, weighted_prox
-export no_constraints, indicator
+export no_constraints, indicator, δ
 
 
 # Scaled version of proximable/projectionable functions
@@ -74,6 +74,7 @@ struct IndicatorFunction{T,N}<:ProximableFunction{T,N}
 end
 
 indicator(C::ProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N}(C)
+δ(C::ProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N}(C)
 
 proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x)
 proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}, opt::AbstractOptimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x, opt)
