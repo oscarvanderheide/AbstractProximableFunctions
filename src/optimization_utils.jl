@@ -24,7 +24,7 @@ function FISTA_optimizer(L::T;
                          reset_counter::Union{Nothing,Integer}=nothing,
                          niter::Union{Nothing,Integer}=nothing,
                          verbose::Bool=false,
-                         fun_history::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T},PT<:Union{Nothing,ProximableFunction{CT,N}}}
+                         fun_history::Bool=false) where {T<:Real,PT<:Union{Nothing,ProximableFunction{<:RealOrComplex{T}}}}
     (fun_history && ~isnothing(niter)) ? (fval = Array{T,1}(undef,niter)) : (fval = nothing)
     t = T(1)
     counter = isnothing(reset_counter) ? nothing : 0
@@ -139,4 +139,4 @@ leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}
 
 leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,PT}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = leastsquares_solve!(A, b, initial_estimate, opt, similar(initial_estimate))
 
-leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,Nothing}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = leastsquares_solve!(A, b, initial_estimate, set_proxy(opt, prox), similar(initial_estimate))
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,Nothing}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, initial_estimate, set_proxy(opt, prox), similar(initial_estimate))
