@@ -1,7 +1,6 @@
 #: Utils
 
 export conjugate, proxy_objfun, proj_objfun, weighted_prox
-export no_constraints, indicator, δ
 
 
 # Scaled version of proximable/projectionable functions
@@ -37,47 +36,6 @@ end
 
 conjugate(g::ProximableFunction{T,N}) where {T,N} = ConjugateProxFun{T,N}(g)
 conjugate(g::ConjugateProxFun) = g.g
-
-
-# Constraint sets
-
-## No constraints
-
-struct NoConstraints{T,N}<:ProjectionableSet{T,N} end
-
-no_constraints(T::DataType, N::Int64) = NoConstraints{T,N}()
-
-project!(x::AbstractArray{T,N}, ::NoConstraints{T,N}, y::Array{T,N}) where {T,N} = (y .= x)
-
-## Sub-level sets with proximable functions
-
-"""
-Constraint set C = {x:g(x)<=ε}
-"""
-struct SubLevelSet{T,N}<:ProjectionableSet{T,N}
-    g::ProximableFunction{T,N}
-    ε::Real
-end
-
-Base.:≤(g::ProximableFunction{CT,N}, ε::T) where {T<:Real,N,CT<:RealOrComplex{T}} = SubLevelSet{CT,N}(g, ε)
-
-project!(x::AbstractArray{T,N}, C::SubLevelSet{T,N}, y::AbstractArray{T,N}) where {T,N} = project!(x, C.ε, C.g, y)
-project!(x::AbstractArray{T,N}, C::SubLevelSet{T,N}, y::AbstractArray{T,N}, opt::AbstractOptimizer) where {T,N} = project!(x, C.ε, C.g, y, opt)
-
-## Indicator function
-
-"""
-Indicator function δ_C(x) = {0, if x ∈ C; ∞, otherwise} for convex sets C
-"""
-struct IndicatorFunction{T,N}<:ProximableFunction{T,N}
-    C::ProjectionableSet{T,N}
-end
-
-indicator(C::ProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N}(C)
-δ(C::ProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N}(C)
-
-proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x)
-proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}, opt::AbstractOptimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x, opt)
 
 
 # Proximable function evaluation
