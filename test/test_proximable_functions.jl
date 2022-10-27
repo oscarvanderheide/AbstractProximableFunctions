@@ -84,3 +84,29 @@ for g = [weighted_prox(mixed_norm(T,3,2,1), A, opt), weighted_prox(mixed_norm(T,
     test_grad(fun, y; step=t, rtol=rtol)
 
 end
+
+# Weighted norms + indicator (3D)
+n = (32, 32, 32)
+y = randn(T, n...); flag_gpu && (y = y |> gpu)
+v = randn(T, n..., 3)
+A = linear_operator(T, n, (n...,3), x->v.*x, y->dropdims(sum(conj(v).*y; dims=4); dims=4))
+ρ = 1.01*spectral_radius(A*A'; niter=200)
+opt = FISTA_optimizer(ρ; Nesterov=true, niter=400, reset_counter=10, verbose=false, fun_history=false)
+δ = indicator(zero_set(T, abs.(y) .> 1))
+for g = [weighted_prox(mixed_norm(T,3,2,1), A, opt), weighted_prox(mixed_norm(T,3,2,2), A, opt), weighted_prox(mixed_norm(T,3,2,Inf), A, opt)]
+
+    # Gradient test (proxy)
+    λ = 0.5*norm(y)^2/g(y)
+    fun = proxy_objfun(λ, g+δ)
+    test_grad(fun, y; step=1e-3, rtol=1e-2)
+
+    # # Projection test
+    # ε = 0.1*g(y)
+    # local x = project(y, ε, g)
+    # @test g(x) ≈ ε rtol=rtol
+
+    # # Gradient test (projection)
+    # fun = proj_objfun(ε, g)
+    # test_grad(fun, y; step=t, rtol=rtol)
+
+end
