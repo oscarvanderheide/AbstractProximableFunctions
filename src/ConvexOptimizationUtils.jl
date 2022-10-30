@@ -1,15 +1,16 @@
 module ConvexOptimizationUtils
 
-using LinearAlgebra, Flux, AbstractLinearOperators, Roots
+using LinearAlgebra, AbstractLinearOperators, Roots
 
 const RealOrComplex{T<:Real} = Union{T,Complex{T}}
 
 include("./abstract_types.jl")
-include("./constraints.jl")
-include("./weighted_proximable_functions.jl")
-include("./type_utils.jl")
-include("./optimization_utils.jl")
+include("./linalg_utils.jl")
 include("./differentiable_functions.jl")
+include("./projectionable_sets.jl")
 include("./proximable_functions.jl")
+include("./weighted_proximable_functions.jl")
+# include("./prox_plus_indicator.jl")
+include("./optimization_utils.jl")
 
 end

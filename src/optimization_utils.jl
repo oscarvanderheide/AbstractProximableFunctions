@@ -1,14 +1,16 @@
 # Optimization utilities:
 # - FISTA: Beck, A., and Teboulle, M., 2009, A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems
 
-export OptimizerFISTA, FISTA_optimizer, reset!, minimize!, linesearch_backtracking, spectral_radius, leastsquares_solve!, leastsquares_solve, verbose, fun_history, set_proxy
+export OptimizerFISTA, FISTA_optimizer, reset!, Lipschitz_constant, set_Lipschitz_constant, set_Lipschitz_constant!, fun_history, verbose
+export minimize, minimize!
+export leastsquares_solve, leastsquares_solve!
+export spectral_radius
 
 
 ## FISTA options
 
-mutable struct OptimizerFISTA{T,PT}<:AbstractOptimizer
+mutable struct OptimizerFISTA{T<:Real}<:DiffPlusProxOptimizer
     Lipschitz_constant::T
-    prox::PT
     Nesterov::Bool
     reset_counter::Union{Nothing,Integer}
     niter::Union{Nothing,Integer}
@@ -19,85 +21,89 @@ mutable struct OptimizerFISTA{T,PT}<:AbstractOptimizer
 end
 
 function FISTA_optimizer(L::T;
-                         prox::PT=nothing,
                          Nesterov::Bool=true,
                          reset_counter::Union{Nothing,Integer}=nothing,
                          niter::Union{Nothing,Integer}=nothing,
                          verbose::Bool=false,
-                         fun_history::Bool=false) where {T<:Real,PT<:Union{Nothing,ProximableFunction{<:RealOrComplex{T}}}}
+                         fun_history::Bool=false) where {T<:Real}
     (fun_history && ~isnothing(niter)) ? (fval = Array{T,1}(undef,niter)) : (fval = nothing)
     t = T(1)
     counter = isnothing(reset_counter) ? nothing : 0
-    return OptimizerFISTA{T,PT}(L, prox, Nesterov, reset_counter, niter, verbose, t, counter, fval)
-end
-
-function reset!(opt::OptimizerFISTA{T,PT}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:Union{Nothing,ProximableFunction{CT,N}}}
-    opt.t = 1
-    ~isnothing(opt.counter) && (opt.counter = 0)
-    ~isnothing(opt.fun_history) && ~isnothing(opt.niter) && (opt.fun_history .= Array{T,1}(undef,opt.niter))
-    return opt
-end
-
-set_proxy(opt::OptimizerFISTA{T,Nothing}, prox::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = OptimizerFISTA{T,typeof(prox)}(opt.Lipschitz_constant, prox, opt.Nesterov, opt.reset_counter, opt.niter, opt.verbose, opt.t, opt.counter, opt.fun_history)
-
-verbose(opt::OptimizerFISTA) = opt.verbose
-
-fun_history(opt::OptimizerFISTA) = opt.fun_history
-
-function Flux.Optimise.apply!(opt::OptimizerFISTA{T,PT}, x::AbstractArray{CT,N}, g::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:Union{Nothing,ProximableFunction{CT,N}}}
-
-    # Gradient + proxy update
-    steplength = T(1)/opt.Lipschitz_constant
-    xnew = x-steplength*g
-    isnothing(opt.prox) ? (g .= xnew) : proxy!(xnew, steplength, opt.prox, g)
-    g .= x-g
-
-    # Nesterov momentum
-    if opt.Nesterov
-        t = (1+sqrt(1+4*opt.t^2))/2
-        g .*= (t+opt.t-1)/t
-        opt.t = t
-    end
-
-    # Update counter
-    ~isnothing(opt.counter) && (opt.counter += 1)
-    ~isnothing(opt.reset_counter) && (opt.counter > opt.reset_counter) && reset!(opt)
-
-    return g
-
+    return OptimizerFISTA{T}(L, Nesterov, reset_counter, niter, verbose, t, counter, fval)
 end
 
 
-# Generic FISTA solver
+## Setter/Getter
 
-"""
-Solver for the regularized problem via FISTA-like gradient-projections:
-```math
-min_x f(x)+g(x)
-```
-Reference: Beck, A., and Teboulle, M., 2009, A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems
-https://www.ceremade.dauphine.fr/~carlier/FISTA
-"""
-function minimize!(fun::DifferentiableFunction{CT,N}, initial_estimate::AbstractArray{CT,N}, opt::OptimizerFISTA{T,PT}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N}}
+function reset!(optimizer::OptimizerFISTA{T}) where {T<:Real}
+    optimizer.t = 1
+    ~isnothing(optimizer.counter) && (optimizer.counter = 0)
+    ~isnothing(optimizer.fun_history) && ~isnothing(optimizer.niter) && (optimizer.fun_history .= Array{T,1}(undef,optimizer.niter))
+    return optimizer
+end
+
+set_Lipschitz_constant!(optimizer::OptimizerFISTA{T}, L::T) where {T<:Real} = (optimizer.Lipschitz_constant = L; return optimizer)
+set_Lipschitz_constant(optimizer::OptimizerFISTA{T}, L::T) where {T<:Real} = OptimizerFISTA{T}(L, optimizer.Nesterov, optimizer.reset_counter, optimizer.niter, optimizer.verbose, optimizer.t, optimizer.counter, optimizer.fun_history)
+
+Lipschitz_constant(optimizer::OptimizerFISTA) = optimizer.Lipschitz_constant
+verbose(optimizer::OptimizerFISTA) = optimizer.verbose
+
+fun_history(optimizer::OptimizerFISTA) = optimizer.fun_history
+
+
+# FISTA solver
+
+function minimize!(fun::DiffPlusProxFunction{CT,N}, initial_estimate::AbstractArray{CT,N}, optimizer::OptimizerFISTA{T}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}}
 
     # Initialization
     x .= initial_estimate
+    x_ = similar(x)
     g  = similar(x)
-    reset!(opt)
+    reset!(optimizer)
+    L = Lipschitz_constant(optimizer)
 
     # Optimization loop
-    for i = 1:opt.niter
-        fval_i = funeval!(fun, x; gradient=g, eval=opt.verbose || ~isnothing(opt.fun_history))
-        ~isnothing(opt.fun_history) && (opt.fun_history[i] = fval_i)
-        Flux.Optimise.update!(opt, x, g)
-        opt.verbose && (@info string("iter: ", i, ", fval: ", fval_i))
+    @inbounds for i = 1:optimizer.niter
+
+        # Compute gradient
+        if verbose(optimizer) || ~isnothing(optimizer.fun_history)
+            fval_i = fungrad_eval!(fun.diff, x, g)
+        else
+            grad_eval!(fun.diff, x, g)
+        end
+        ~isnothing(optimizer.fun_history) && (optimizer.fun_history[i] = fval_i)
+
+        # Print current iteration
+        verbose(optimizer) && (@info string("Iter: ", i, ", fval: ", fval_i))
+
+        # Update
+        proxy!(x-g/L, 1/L, fun.prox, x_)
+
+        # Nesterov acceleration
+        if optimizer.Nesterov
+            t = (1+sqrt(1+4*optimizer.t^2))/2
+            x .= x_+(optimizer.t-1)/t*(x_-x)
+            optimizer.t = t
+            ~isnothing(optimizer.counter) && (optimizer.counter += 1)
+
+            # Reset momentum
+            ~isnothing(optimizer.reset_counter) && (optimizer.counter >= optimizer.reset_counter) && (optimizer.t = T(1))
+        end
+
     end
 
     return x
 
 end
 
-minimize!(fun::DiffPlusProxFun{CT,N}, initial_estimate::AbstractArray{CT,N}, opt::OptimizerFISTA{T,Nothing}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = minimize!(fun.diff, initial_estimate, set_proxy(opt, fun.prox), x)
+minimize(fun::DiffPlusProxFunction{CT,N}, initial_estimate::AbstractArray{CT,N}, optimizer::OptimizerFISTA{T}) where {T<:Real,N,CT<:RealOrComplex{T}} = minimize!(fun, initial_estimate, optimizer, similar(initial_estimate))
+
+
+## Least-squares linear problem routines
+
+leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::ProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = minimize!(leastsquares_misfit(A, b)+g, initial_estimate, optimizer, x)
+
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::ProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, g, initial_estimate, set_proxy(optimizer, prox), similar(initial_estimate))
 
 
 # Other utils
@@ -117,26 +123,3 @@ function spectral_radius(A::AT; x::Union{Nothing,AbstractArray{T,N}}=nothing, ni
     end
     return ρ
 end
-
-
-function linesearch_backtracking(obj::Function, x0::AbstractArray{CT,N}, p::AbstractArray{CT,N}, lr::T; fx0::Union{Nothing,T}=nothing, niter::Integer=3, mult_fact::T=T(0.5), verbose::Bool=false) where {T<:Real,N,CT<:RealOrComplex{T}}
-
-    isnothing(fx0) && (fx0 = obj(x0))
-    for _ = 1:niter
-        fx = obj(x0+lr*p)
-        fx < fx0 ? break : (verbose && print("."); lr *= mult_fact)
-    end
-    return lr
-
-end
-
-
-## Least-squares linear problem routines
-
-leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,PT}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = minimize!(leastsquares_misfit(A, b), initial_estimate, opt, x)
-
-leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,Nothing}, x::AbstractArray{CT,N1}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, initial_estimate, set_proxy(opt, prox), x)
-
-leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,PT}) where {T<:Real,N1,N2,CT<:RealOrComplex{T},PT<:ProximableFunction{CT,N1}} = leastsquares_solve!(A, b, initial_estimate, opt, similar(initial_estimate))
-
-leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, initial_estimate::AbstractArray{CT,N1}, opt::OptimizerFISTA{T,Nothing}; prox::ProximableFunction{CT,N1}=null_prox(CT,N1)) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, initial_estimate, set_proxy(opt, prox), similar(initial_estimate))

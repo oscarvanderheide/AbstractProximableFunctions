@@ -1,92 +1,48 @@
-export set_optimizer!, WeightedProximableFun, weighted_prox, ProxPlusIndicator, WeightedProxPlusIndicator
+export WeightedProximableFun, weighted_prox
 
 
 # Proximable + linear operator
 
-mutable struct WeightedProximableFun{T,N1,N2}<:ProximableFunction{T,N1}
+struct WeightedProximableFun{T,N1,N2}<:ProximableFunction{T,N1}
     prox::ProximableFunction{T,N2}
     linear_operator::AbstractLinearOperator{T,N1,N2}
-    opt::AbstractOptimizer
+    optimizer::Union{Nothing,Optimizer}
 end
 
-weighted_prox(g::ProximableFunction{T,N2}, A::AbstractLinearOperator{T,N1,N2}, opt::AbstractOptimizer) where {T,N1,N2} = WeightedProximableFun{T,N1,N2}(g, A, opt)
-set_optimizer!(g::WeightedProximableFun, opt::AbstractOptimizer) = (g.opt = opt)
+weighted_prox(g::ProximableFunction{T,N2}, A::AbstractLinearOperator{T,N1,N2}; optimizer::Union{Nothing,Optimizer}=nothing) where {T,N1,N2} = WeightedProximableFun{T,N1,N2}(g, A, optimizer)
+Base.:∘(g::ProximableFunction{T,N2}, A::AbstractLinearOperator{T,N1,N2}; optimizer::Union{Nothing,Optimizer}=nothing) where {T,N1,N2} = weighted_prox(g, A; optimizer=optimizer)
 
-function proxy!(y::AbstractArray{CT,N1}, λ::T, g::WeightedProximableFun{CT,N1,N2}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
+fun_eval(g::WeightedProximableFun{T,N1,N2}, x::AbstractArray{T,N1}) where {T,N1,N2} = g.prox(g.linear_operator*x)
+
+get_optimizer(g::WeightedProximableFun) = get_optimizer(g.optimizer, get_optimizer(g.prox))
+
+function proxy!(y::AbstractArray{CT,N1}, λ::T, g::WeightedProximableFun{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
     # Objective function (dual problem)
-    f = leastsquares_misfit(adjoint(g.linear_operator), y/λ)+conjugate(g.prox)/λ
+    f = leastsquares_misfit(λ*g.linear_operator', y)+λ*conjugate(g.prox)
 
     # Minimization (dual variable)
-    p0 = similar(y, range_size(g.linear_operator)); fill!(p0, 0)
-    p = minimize(f, p0, g.opt)
+    optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
+    optimizer = set_Lipschitz_constant(optimizer, λ^2*Lipschitz_constant(optimizer))
+    p0 = similar(y, range_size(g.linear_operator)); p0 .= 0
+    p = minimize(f, p0, optimizer)
 
     # Dual to primal solution
-    return x .= y-λ*(adjoint(g.linear_operator)*p)
+    return x .= y-λ*(g.linear_operator'*p)
 
 end
 
-function project!(y::AbstractArray{CT,N1}, ε::T, g::WeightedProximableFun{CT,N1,N2}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
+function project!(y::AbstractArray{CT,N1}, ε::T, g::WeightedProximableFun{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
     # Objective function (dual problem)
-    f = leastsquares_misfit(adjoint(g.linear_operator), y)+conjugate(indicator(g.prox ≤ ε))
+    f = leastsquares_misfit(g.linear_operator', y)+conjugate(indicator(g.prox ≤ ε))
 
     # Minimization (dual variable)
-    p0 = similar(y, range_size(g.linear_operator)); fill!(p0, 0)
-    p = minimize(f, p0, g.opt)
+    optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
+    p0 = similar(y, range_size(g.linear_operator)); p0 .= 0
+    p = minimize(f, p0, optimizer)
 
     # Dual to primal solution
-    return x .= y-adjoint(g.linear_operator)*p
-
-end
-
-(g::WeightedProximableFun{T,N1,N2})(x::AbstractArray{T,N1}) where {T,N1,N2} = g.prox(g.linear_operator*x)
-
-Flux.gpu(g::WeightedProximableFun{T,N1,N2}) where {T,N1,N2} = WeightedProximableFun{T,N1,N2}(g.prox, gpu(g.linear_operator), g.opt)
-Flux.cpu(g::WeightedProximableFun{T,N1,N2}) where {T,N1,N2} = WeightedProximableFun{T,N1,N2}(g.prox, cpu(g.linear_operator), g.opt)
-
-
-# Weighted proximable + indicator
-
-abstract type ProxPlusIndicator{T,N}<:ProximableFunction{T,N} end
-
-struct WeightedProxPlusIndicator{T,N1,N2}<:ProxPlusIndicator{T,N1}
-    wprox::WeightedProximableFun{T,N1,N2}
-    indicator::IndicatorFunction{T,N1}
-end
-
-(g::WeightedProxPlusIndicator{T,N1,N2})(x::AbstractArray{T,N1}) where {T,N1,N2} = (x ∈ g.indicator.C) ? g.wprox(x) : T(Inf)
-
-Base.:+(g::WeightedProximableFun{T,N1,N2}, δ::IndicatorFunction{T,N1}) where {T,N1,N2} = WeightedProxPlusIndicator{T,N1,N2}(g, δ)
-Base.:+(δ::IndicatorFunction{T,N1}, g::WeightedProximableFun{T,N1,N2}) where {T,N1,N2} = g+δ
-
-struct WeightedProxPlusIndicatorProxObj{T,N1,N2}<:DifferentiableFunction{T,N2}
-    linear_operator::AbstractLinearOperator{T,N1,N2}
-    y::AbstractArray{T,N1}
-    λ::T
-    C::ProjectionableSet{T,N1}
-end
-
-wprox_plus_indicator_proxobj(A::AbstractLinearOperator{CT,N1,N2}, y::AbstractArray{CT,N1}, λ::T, C::ProjectionableSet{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = WeightedProxPlusIndicatorProxObj{CT,N1,N2}(A, y, λ, C)
-
-function funeval!(f::WeightedProxPlusIndicatorProxObj{CT,N1,N2}, p::AbstractArray{CT,N2}; gradient::Union{Nothing,AbstractArray{CT,N2}}=nothing, eval::Bool=true) where {T<:Real,CT<:RealOrComplex{T},N1,N2}
-    r = f.y-f.λ*f.linear_operator'*p
-    xC = project(r, f.C)
-    eval ? (fval = (T(0.5)*norm(r)^2-T(0.5)*norm(xC-r)^2)/f.λ^2) : (fval = nothing)
-    ~isnothing(gradient) && (gradient .= -(f.linear_operator*xC)/f.λ)
-    return fval
-end
-
-function proxy!(y::AbstractArray{CT,N1}, λ::T, g::WeightedProxPlusIndicator{CT,N1,N2}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
-
-    # Objective function (dual problem)
-    f = wprox_plus_indicator_proxobj(g.wprox.linear_operator, y, λ, g.indicator.C)+conjugate(g.wprox.prox)/λ
-
-    # Minimization (dual variable)
-    p0 = similar(y, range_size(g.wprox.linear_operator)); fill!(p0, 0)
-    p = minimize(f, p0, g.wprox.opt)
-
-    # Dual to primal solution
-    return project!(y-λ*(g.wprox.linear_operator'*p), g.indicator.C, x)
+    return x .= y-g.linear_operator'*p
 
 end

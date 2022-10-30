@@ -22,11 +22,3 @@ J = leastsquares_misfit(A, y)
 # Gradient test
 x = randn(T, n...)
 test_grad(J, x; step=T(1e-5), rtol=T(1e-6))
-
-# Weighted prox. + indicator objective (gradient test)
-x = randn(T, range_size(A))
-y = randn(T, n)
-λ = T(0.1)
-C = zero_set(T, y.>0)
-J = ConvexOptimizationUtils.wprox_plus_indicator_proxobj(A, y, λ, C)
-test_grad(J, x; step=T(1e-5), rtol=T(1e-4))

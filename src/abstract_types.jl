@@ -1,51 +1,72 @@
 #: Abstract functional types
 
-export AbstractOptimizer, MinimizableFunction, DifferentiableFunction, ProximableFunction, ProjectionableSet, funeval, funeval!, minimize, minimize!, proxy, proxy!, project, project!
+export DiffPlusProxOptimizer
+export MinimizableFunction, minimize, minimize!, fun_eval, fun_eval!
+export DifferentiableFunction, grad_eval, grad_eval!, fungrad_eval, fungrad_eval!
+export ProximableFunction, proxy, proxy!, project, project!
+export ProjectionableSet
 
 
-# Abstract type declarations
+## Optimizers
 
-abstract type AbstractOptimizer<:Flux.Optimise.AbstractOptimiser end
+abstract type Optimizer end
+abstract type DiffPlusProxOptimizer<:Optimizer end
 
-"""Expected behavior for MinimizableFunction:
-- minimize!(f::MinimizableFunction{T,N}, x0::AbstractArray{T,N}, opt::AbstractOptimizer, x::AbstractArray{T,N}) where {T,N}
-It approximates the solution of the optimization problem: min_x f(x)
-"""
+
+## Minimizable functions
+
 abstract type MinimizableFunction{T,N} end
 
-minimize(fun::MinimizableFunction{T,N}, x0::AbstractArray{T,N}, opt::AbstractOptimizer) where {T,N} = minimize!(fun, x0, opt, similar(x0))
+# minimize!(fun::MinimizableFunction{T,N}, x0::AbstractArray{T,N}, x::AbstractArray{T,N}; optimizer::Optimizer) where {T,N} = ...
+# fun_eval(fun::MinimizableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = ...
+
+minimize(fun::MinimizableFunction{T,N}, x0::AbstractArray{T,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T,N} = minimize!(fun, x0, similar(x0); optimizer=optimizer)
+
+(fun::MinimizableFunction{T,N})(x::AbstractArray{T,N}) where {T,N} = fun_eval(fun, x)
 
 
-"""Expected behavior for DifferentiableFunction:
-- fval::T = funeval!(f::DifferentiableFunction{DT}, x::DT; gradient::DT, eval::Bool) where {T,N,DT<:AbstractArray{T,N}} 
-"""
+## Differentiable functions
+
 abstract type DifferentiableFunction{T,N}<:MinimizableFunction{T,N} end
 
-function funeval(fun::DifferentiableFunction{T,N}, x::AbstractArray{T,N}; gradient::Bool=false, eval::Bool=true) where {T,N}
-    gradient ? (g = similar(x)) : (g = nothing)
-    fval = funeval!(fun, x; gradient=g, eval=eval)
-    gradient ? (return (fval, g)) : (return fval)
+# fun_eval(fun::DifferentiableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = ...
+# grad_eval!(fun::DifferentiableFunction{T,N}, x::AbstractArray{T,N}, gradient::AbstractArray{T,N}) where {T,N} = ...
+# fungrad_eval!(fun::DifferentiableFunction{T,N}, x::AbstractArray{T,N}, gradient::AbstractArray{T,N}) where {T,N} = ...
+
+grad_eval(fun::DifferentiableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = (g = similar(x); grad_eval!(fun, x, g); return g)
+
+fungrad_eval(fun::DifferentiableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = (g = similar(x); fval = fungrad_eval!(fun, x, g); return (fval, g))
+
+
+## Proximable functions
+
+abstract type ProximableFunction{T,N}<:MinimizableFunction{T,N} end
+
+# fun_eval(fun::ProximableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = ...
+# proxy!(y::AbstractArray{CT,N}, λ::T, g::ProximableFunction{CT,N}; optimizer::Optimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = ...
+# get_optimizer(g::ProximableFunction) = ...
+
+proxy(y::AbstractArray{CT,N}, λ::T, g::ProximableFunction{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ, g, similar(y); optimizer=optimizer)
+project(y::AbstractArray{CT,N}, ε::T, g::ProximableFunction{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, similar(y); optimizer=optimizer)
+
+function get_optimizer(optimizer::Union{Nothing,Optimizer,ProximableFunction}...)
+    @inbounds for opt = optimizer
+        if ~isnothing(opt)
+            (opt isa Optimizer) && (return opt)
+            (opt isa ProximableFunction) && ~isnothing(get_optimizer(opt)) && (return get_optimizer(opt))
+        end
+    end
+    return nothing
 end
 
-(fun::DifferentiableFunction{T,N})(x::AbstractArray{T,N}; gradient::Bool=false, eval::Bool=true) where {T,N} = funeval(fun, x; gradient=gradient, eval=eval)
-
-"""Expected behavior for ProximableFunction:
-- proxy!(y::AbstractArray{T,N}, λ::T, g::ProximableFunction{T,N}, x::AbstractArray{T,N}) where {T,N}
-- proxy!(y::AbstractArray{T,N}, λ::T, g::ProximableFunction{T,N}, x::AbstractArray{T,N}, opt::AbstractOptimizer) where {T,N}
-It approximates the solution of the optimization problem: min_x 0.5*norm(x-y)^2+λ*g(x)
-- project!(y::AbstractArray{T,N}, ε::T, g::ProximableFunction{T,N}, x::AbstractArray{T,N}) where {T,N}
-- project!(y::AbstractArray{T,N}, ε::T, g::ProximableFunction{T,N}, x::AbstractArray{T,N}, opt::AbstractOptimizer) where {T,N}
-It approximates the solution of the optimization problem: min_{g(x)<=ε} 0.5*norm(x-y)^2
-"""
-abstract type ProximableFunction{T,N} end
-
-proxy(y::AbstractArray{CT,N}, λ::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ, g, similar(y))
-project(y::AbstractArray{CT,N}, ε::T, g::ProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, similar(y))
+is_specified(opt::Union{Nothing,Optimizer}) = isnothing(opt) && error("The requested routines needs the specification of an optimizer")
 
 
-"""Projectional sets
-Expected behavior for convex sets: y = project!(x, C, y), y = Π_C(x)
-"""
+## Convex sets
+
 abstract type ProjectionableSet{T,N} end
 
-project(x::AbstractArray{T,N}, C::ProjectionableSet{T,N}) where {T,N} = project!(x, C, similar(x))
+## Base.in(x::AbstractArray{T,N}, C::ProjectionableSet{T,N}) where {T,N} = ...
+## project!(x::AbstractArray{T,N}, C::ProjectionableSet{T,N}, y::AbstractArray{T,N}; optimizer::Optimizer) = ...
+
+project(x::AbstractArray{T,N}, C::ProjectionableSet{T,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T,N} = project!(x, C, similar(x); optimizer=optimizer)
