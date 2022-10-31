@@ -1,9 +1,24 @@
 #: Examples of proximable functions
 
-export MixedNorm, MixedNormBatch, ptdot, ptnorm1, ptnorm2, ptnormInf, mixed_norm
+export ZeroProx, zero_prox, MixedNorm, MixedNormBatch, ptdot, ptnorm1, ptnorm2, ptnormInf, mixed_norm
 
 
-# Mixed norm
+# Mixed norms
+
+struct ZeroProx{T,N}<:ProximableFunction{T,N} end
+
+zero_prox(T::DataType, N::Number) = ZeroProx{T,N}()
+
+fun_eval(::ZeroProx{CT,N}, ::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = T(0)
+
+get_optimizer(::ZeroProx) = nothing
+
+proxy!(p::AbstractArray{CT,N}, ::T, ::ZeroProx{CT,N}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = (return q .= p)
+
+project!(p::AbstractArray{CT,N}, ::T, ::ZeroProx{CT,N}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = (return q .= p)
+
+
+# Mixed norms
 
 struct MixedNorm{T,D,N1,N2}<:ProximableFunction{T,D}
     pareto_tol::Union{Nothing,Real}

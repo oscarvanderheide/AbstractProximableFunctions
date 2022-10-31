@@ -12,26 +12,33 @@ for dim = 1:3
 
     # Random data
     sz = tuple(repeat([n]; outer=dim)...)
+    C = zero_set(T, randn(Float64, sz...) .> 0.0)
+    δ = indicator(C)
     y = randn(T, sz...)
     v = randn(T, sz..., dim)
     A = linear_operator(T, sz, (sz...,dim), x->v.*x, y->dropdims(sum(conj(v).*y; dims=dim+1); dims=dim+1))
     ρ = 1.01*spectral_radius(A*A'; niter=200)
     opt = FISTA_optimizer(ρ; Nesterov=true, niter=400, reset_counter=20, verbose=false, fun_history=false)
 
-    for g = [weighted_prox(mixed_norm(T,dim,2,2), A; optimizer=opt), weighted_prox(mixed_norm(T,dim,2,1), A; optimizer=opt), weighted_prox(mixed_norm(T,dim,2,Inf), A; optimizer=opt)]
+    for g_ = [weighted_prox(mixed_norm(T,dim,2,2), A; optimizer=opt), weighted_prox(mixed_norm(T,dim,2,1), A; optimizer=opt), weighted_prox(mixed_norm(T,dim,2,Inf), A; optimizer=opt)]
 
-        # Proxy
-        λ = 0.5*norm(y)^2/g(y)
+        # # Proxy
+        g = g_+δ
+        λ = 0.5*norm(y)^2/g_(y)
         x = proxy(y, λ, g)
+
+        # Projection test
+        @test x ∈ C
 
         # Gradient test (proxy)
         fun = proxy_objfun(g, λ)
         test_grad(fun, y; step=t, rtol=rtol)
 
         # Projection test
-        ε = 0.8*g(y)
+        ε = 0.8*g_(y)
         x = project(y, ε, g)
         @test (g(x) ≤ ε) || (abs(g(x)-ε) ≤ rtol*ε)
+        @test x ∈ C
 
         ## Gradient test (projection)
         fun = proj_objfun(g, ε)

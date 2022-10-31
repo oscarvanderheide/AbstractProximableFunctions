@@ -10,7 +10,7 @@ include("./differentiable_functions.jl")
 include("./projectionable_sets.jl")
 include("./proximable_functions.jl")
 include("./weighted_proximable_functions.jl")
-# include("./prox_plus_indicator.jl")
+include("./prox_plus_indicator.jl")
 include("./optimization_utils.jl")
 
 end

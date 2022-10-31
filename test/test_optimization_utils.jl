@@ -1,5 +1,4 @@
-using ConvexOptimizationUtils, LinearAlgebra, Flux, Test, AbstractLinearOperators
-import Flux.Optimise: Optimiser, update!
+using ConvexOptimizationUtils, LinearAlgebra, Test, AbstractLinearOperators
 
 rtol = 1e-5
 
@@ -10,36 +9,20 @@ A = Q*diagm(T(1).+T(0.1)*randn(T,100))*Q'
 b = randn(T, 100)
 xtrue = A\b
 
-# FISTA
+# Via minimize routine
+g = zero_prox(T, 1)
 x0 = randn(T, 100)
-L = T(1.1)*spectral_radius(A'*A; niter=1000)
-g = null_prox(T, 1)
+L = T(1.1)*spectral_radius(A'*A; niter=100)
+niter = 100
 Nesterov = true
 # Nesterov = false
-opt_fista = FISTA_optimizer(L; prox=g, Nesterov=Nesterov, reset_counter=10, verbose=false)
-niter = 100
-fval_fista = Array{T,1}(undef, niter)
-x = deepcopy(x0)
-for i = 1:niter
-    r = A*x-b
-    fval_fista[i] = 0.5*norm(r)^2
-    local g = A'*r
-    update!(opt_fista, x, g)
-end
-@test x ≈ xtrue rtol=rtol
-
-# Via minimize routine
+opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false, fun_history=true)
 Aop = linear_operator(T, size(xtrue), size(xtrue), x->A*x, y->A'*y)
 f = leastsquares_misfit(Aop, b)
-opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
-x_ = minimize(f+g, x0, opt_fista)
-@test x_ ≈ xtrue rtol=rtol
+x = minimize(f+g, x0, opt_fista)
+fval_fista = fun_history(opt_fista)
+@test x ≈ xtrue rtol=rtol
 
 # Via least-squares routines
-opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
-x_ = leastsquares_solve(Aop, b, x0, opt_fista; prox=g)
-@test x_ ≈ xtrue rtol=rtol
-
-opt_fista = FISTA_optimizer(L; prox=g, Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false)
-x_ = leastsquares_solve(Aop, b, x0, opt_fista)
-@test x_ ≈ xtrue rtol=rtol
+x = leastsquares_solve(Aop, b, g, x0, opt_fista)
+@test x ≈ xtrue rtol=rtol

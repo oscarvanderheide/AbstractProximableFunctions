@@ -103,7 +103,7 @@ minimize(fun::DiffPlusProxFunction{CT,N}, initial_estimate::AbstractArray{CT,N},
 
 leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::ProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = minimize!(leastsquares_misfit(A, b)+g, initial_estimate, optimizer, x)
 
-leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::ProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, g, initial_estimate, set_proxy(optimizer, prox), similar(initial_estimate))
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::ProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, g, initial_estimate, optimizer, similar(initial_estimate))
 
 
 # Other utils
