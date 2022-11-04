@@ -20,9 +20,9 @@ version = "1.0.0"
 
 [[deps.Accessors]]
 deps = ["Compat", "CompositionsBase", "ConstructionBase", "Dates", "InverseFunctions", "LinearAlgebra", "MacroTools", "Requires", "Test"]
-git-tree-sha1 = "ff77abdacacad13fbdd2d0863fab1af5af819693"
+git-tree-sha1 = "eb7a1342ff77f4f9b6552605f27fd432745a53a3"
 uuid = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
-version = "0.1.21"
+version = "0.1.22"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -271,9 +271,9 @@ version = "0.1.2"
 
 [[deps.GPUCompiler]]
 deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "TimerOutputs", "UUIDs"]
-git-tree-sha1 = "323949b0bbdf38c93d2ea1f7d3e68ff163c3f081"
+git-tree-sha1 = "76f70a337a153c1632104af19d29023dbb6f30dd"
 uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
-version = "0.16.5"
+version = "0.16.6"
 
 [[deps.IRTools]]
 deps = ["InteractiveUtils", "MacroTools", "Test"]
@@ -375,9 +375,9 @@ version = "0.3.18"
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
 
 [[deps.MLStyle]]
-git-tree-sha1 = "0638598b2ea9c60303e036be920df8df60fe2812"
+git-tree-sha1 = "43f9be9c281179fe44205e2dc19f22e71e022d41"
 uuid = "d8e11817-5142-5d16-987a-aa16d5891078"
-version = "0.4.14"
+version = "0.4.15"
 
 [[deps.MLUtils]]
 deps = ["ChainRulesCore", "DelimitedFiles", "FLoops", "FoldsThreads", "Random", "ShowCases", "Statistics", "StatsBase", "Transducers"]

@@ -6,10 +6,10 @@ n = 32
 t = 1e-4
 rtol = 10*t
 
-for dim = 1:3, g = [mixed_norm(T,dim,2,2), mixed_norm(T,dim,2,1), mixed_norm(T,dim,2,Inf)]
+for dim = 1:3, g = [norm(T,dim,2), norm(T,dim,1), norm(T,dim,Inf)]
 
     # Random data
-    y = randn(T, tuple(repeat([n]; outer=dim)...)..., dim)
+    y = randn(T, tuple(repeat([n]; outer=dim)...)...)
 
     # Proxy
     λ = 0.5*norm(y)^2/g(y)

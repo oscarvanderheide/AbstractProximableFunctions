@@ -7,10 +7,11 @@ const RealOrComplex{T<:Real} = Union{T,Complex{T}}
 include("./abstract_types.jl")
 include("./linalg_utils.jl")
 include("./differentiable_functions.jl")
+include("./differentiable_functions_examples.jl")
 include("./projectionable_sets.jl")
+include("./projectionable_sets_examples.jl")
 include("./proximable_functions.jl")
-include("./weighted_proximable_functions.jl")
-include("./prox_plus_indicator.jl")
+include("./proximable_functions_examples.jl")
 include("./optimization_utils.jl")
 
 end

@@ -1,100 +1,124 @@
-#: Examples of proximable functions
+#: Utilities for proximable functions
 
-export ZeroProx, zero_prox, MixedNorm, MixedNormBatch, ptdot, ptnorm1, ptnorm2, ptnormInf, mixed_norm
-
-
-# Mixed norms
-
-struct ZeroProx{T,N}<:ProximableFunction{T,N} end
-
-zero_prox(T::DataType, N::Number) = ZeroProx{T,N}()
-
-fun_eval(::ZeroProx{CT,N}, ::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = T(0)
-
-get_optimizer(::ZeroProx) = nothing
-
-proxy!(p::AbstractArray{CT,N}, ::T, ::ZeroProx{CT,N}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = (return q .= p)
-
-project!(p::AbstractArray{CT,N}, ::T, ::ZeroProx{CT,N}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = (return q .= p)
+export WeightedProximableFunction, weighted_prox
 
 
-# Mixed norms
+# Proximable + linear operator
 
-struct MixedNorm{T,D,N1,N2}<:ProximableFunction{T,D}
-    pareto_tol::Union{Nothing,Real}
+struct WeightedProximableFunction{T,N1,N2}<:AbstractProximableFunction{T,N1}
+    prox::AbstractProximableFunction{T,N2}
+    linear_operator::AbstractLinearOperator{T,N1,N2}
+    optimizer::Union{Nothing,AbstractConvexOptimizer}
 end
 
-mixed_norm(T::DataType, D::Number, N1::Number, N2::Number; pareto_tol::Union{Nothing,Real}=nothing) = MixedNorm{T,D+1,N1,N2}(pareto_tol)
+weighted_prox(g::AbstractProximableFunction{T,N2}, A::AbstractLinearOperator{T,N1,N2}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T,N1,N2} = WeightedProximableFunction{T,N1,N2}(g, A, optimizer)
+Base.:∘(g::AbstractProximableFunction{T,N2}, A::AbstractLinearOperator{T,N1,N2}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T,N1,N2} = weighted_prox(g, A; optimizer=optimizer)
 
-get_optimizer(::MixedNorm) = nothing
+fun_eval(g::WeightedProximableFunction{T,N1,N2}, x::AbstractArray{T,N1}) where {T,N1,N2} = g.prox(g.linear_operator*x)
 
+get_optimizer(g::WeightedProximableFunction) = get_optimizer(g.optimizer, get_optimizer(g.prox))
 
-# L22 norm
+function proxy!(y::AbstractArray{CT,N1}, λ::T, g::WeightedProximableFunction{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
-fun_eval(::MixedNorm{T,N,2,2}, p::AbstractArray{T,N}) where {T,N} = norm22(p)
+    # Objective function (dual problem)
+    f = leastsquares_misfit(λ*g.linear_operator', y)+λ*conjugate(g.prox)
 
-function proxy!(p::AbstractArray{CT,N}, λ::T, ::MixedNorm{CT,N,2,2}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}}
-    np = norm22(p)
-    np <= λ ? (q .= 0) : (q .= (1-λ/np)*p)
-    return q
+    # Minimization (dual variable)
+    optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
+    optimizer = set_Lipschitz_constant(optimizer, λ^2*Lipschitz_constant(optimizer))
+    p0 = similar(y, range_size(g.linear_operator)); p0 .= 0
+    p = minimize(f, p0, optimizer)
+
+    # Dual to primal solution
+    return x .= y-λ*(g.linear_operator'*p)
+
 end
 
-function project!(p::AbstractArray{CT,N}, ε::T, ::MixedNorm{CT,N,2,2}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}}
-    np = norm22(p)
-    np <= ε ? (q .= p) : (q .= ε*p/np)
-    return q
-end
+function project!(y::AbstractArray{CT,N1}, ε::T, g::WeightedProximableFunction{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
+    # Objective function (dual problem)
+    f = leastsquares_misfit(g.linear_operator', y)+conjugate(indicator(g.prox ≤ ε))
 
-# L21 norm
+    # Minimization (dual variable)
+    optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
+    p0 = similar(y, range_size(g.linear_operator)); p0 .= 0
+    p = minimize(f, p0, optimizer)
 
-fun_eval(::MixedNorm{T,N,2,1}, p::AbstractArray{T,N}) where {T,N} = norm21(p)
+    # Dual to primal solution
+    return x .= y-g.linear_operator'*p
 
-function proxy!(p::AbstractArray{CT,N}, λ::T, ::MixedNorm{CT,N,2,1}, q::AbstractArray{CT,N}; ptn::Union{AbstractArray{T,N},Nothing}=nothing, optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}}
-    ptn === nothing && (ptn = ptnorm2(p; η=eps(T)))
-    return q .= (1 .-λ./ptn).*(ptn .>= λ).*p
-end
-
-function project!(p::AbstractArray{CT,N}, ε::T, g::MixedNorm{CT,N,2,1}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}}
-    ptn = ptnorm2(p; η=eps(T))
-    sum(ptn) <= ε && (return q .= p)
-    λ = pareto_search_proj21(ptn, ε; xrtol=g.pareto_tol)
-    return proxy!(p, λ, g, q; ptn=ptn, optimizer=optimizer)
 end
 
 
-# L2Inf norm
+# Weighted proximable + indicator
 
-fun_eval(::MixedNorm{T,N,2,Inf}, p::AbstractArray{T,N}) where {T,N} = norm2Inf(p)
-
-function proxy!(p::AbstractArray{CT,N}, λ::T, ::MixedNorm{CT,N,2,Inf}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}}
-    project!(p, λ, mixed_norm(CT, N-1, 2, 1), q; optimizer=optimizer)
-    return q .= p.-q
+struct WeightedProxPlusIndicator{T,N1,N2}<:ProxPlusIndicator{T,N1}
+    wprox::WeightedProximableFunction{T,N1,N2}
+    indicator::IndicatorFunction{T,N1}
 end
 
-function project!(p::AbstractArray{CT,N}, ε::T, ::MixedNorm{CT,N,2,Inf}, q::AbstractArray{CT,N}; optimizer::Union{Nothing,Optimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}}
-    ptn = ptnorm2(p; η=eps(T))
-    val = ptn .>= ε
-    q .= p.*(ε*val./ptn+(!).(val))
-    return q
+Base.:+(g::WeightedProximableFunction{T,N1,N2}, δ::IndicatorFunction{T,N1}) where {T,N1,N2} = WeightedProxPlusIndicator{T,N1,N2}(g, δ)
+Base.:+(δ::IndicatorFunction{T,N1}, g::WeightedProximableFunction{T,N1,N2}) where {T,N1,N2} = g+δ
+
+fun_eval(g::WeightedProxPlusIndicator{T,N1,N2}, x::AbstractArray{T,N1}) where {T,N1,N2} = (x ∈ g.indicator.C) ? g.wprox(x) : T(Inf)
+
+get_optimizer(g::WeightedProxPlusIndicator) = get_optimizer(g.wprox)
+
+struct WeightedProxPlusIndicatorProxObj{T,N1,N2}<:AbstractDifferentiableFunction{T,N2}
+    linear_operator::AbstractLinearOperator{T,N1,N2}
+    y::AbstractArray{T,N1}
+    λ::Real
+    C::AbstractProjectionableSet{T,N1}
 end
 
+wprox_plus_indicator_proxobj(A::AbstractLinearOperator{CT,N1,N2}, y::AbstractArray{CT,N1}, λ::T, C::AbstractProjectionableSet{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = WeightedProxPlusIndicatorProxObj{CT,N1,N2}(A, y, λ, C)
 
-# Pareto-search routines
+function fun_eval(f::WeightedProxPlusIndicatorProxObj{CT,N1,N2}, p::AbstractArray{CT,N2}) where {T<:Real,CT<:RealOrComplex{T},N1,N2}
+    r = f.y-f.λ*f.linear_operator'*p
+    xC = project(r, f.C)
+    return T(0.5)*norm(r)^2-T(0.5)*norm(r-xC)^2
+end
 
-pareto_search_proj21(ptn::AbstractArray{T,N}, ε::T; xrtol::Union{Nothing,T}=nothing) where {T<:Real,N} = T(solve(ZeroProblem(λ -> obj_pareto_search_proj21(λ, ptn, ε), (T(0), maximum(ptn))), Roots.Brent(); xreltol=isnothing(xrtol) ? eps(T) : xrtol))
+function grad_eval!(f::WeightedProxPlusIndicatorProxObj{CT,N1,N2}, p::AbstractArray{CT,N2}, g::AbstractArray{CT,N2}) where {T<:Real,CT<:RealOrComplex{T},N1,N2}
+    r = f.y-f.λ*f.linear_operator'*p
+    xC = project(r, f.C)
+    return g .= -f.λ*(f.linear_operator*xC)
+end
 
-obj_pareto_search_proj21(λ::T, ptn::AbstractArray{T,N}, ε::T) where {T<:Real,N} = sum(relu(ptn.-λ))-ε
+function fungrad_eval!(f::WeightedProxPlusIndicatorProxObj{CT,N1,N2}, p::AbstractArray{CT,N2}, g::AbstractArray{CT,N2}) where {T<:Real,CT<:RealOrComplex{T},N1,N2}
+    r = f.y-f.λ*f.linear_operator'*p
+    xC = project(r, f.C)
+    g .= -f.λ*(f.linear_operator*xC)
+    return T(0.5)*norm(r)^2-T(0.5)*norm(r-xC)^2, g
+end
 
-relu(x::AbstractArray{T,N}) where {T<:Real,N} = x.*(x .> 0)
+function proxy!(y::AbstractArray{CT,N1}, λ::T, g::WeightedProxPlusIndicator{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
+    # Objective function (dual problem)
+    f = wprox_plus_indicator_proxobj(g.wprox.linear_operator, y, λ, g.indicator.C)+λ*conjugate(g.wprox.prox)
 
-# Norm utils
+    # Minimization (dual variable)
+    optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
+    optimizer = set_Lipschitz_constant(optimizer, λ^2*Lipschitz_constant(optimizer))
+    p0 = similar(y, range_size(g.wprox.linear_operator)); p0 .= 0
+    p = minimize(f, p0, optimizer)
 
-ptdot(v1::AbstractArray{T,N}, v2::AbstractArray{T,N}) where {T,N} = sum(v1.*conj.(v2); dims=N)
-ptnorm1(p::AbstractArray{CT,N}; η::T=T(0)) where {T<:Real,N,CT<:RealOrComplex{T}} = sum(abs.(p).+η; dims=N)
-ptnorm2(p::AbstractArray{CT,N}; η::T=T(0)) where {T<:Real,N,CT<:RealOrComplex{T}} = sqrt.(sum(abs.(p).^2 .+η^2; dims=N))
-ptnormInf(p::AbstractArray{CT,N}; η::T=T(0)) where {T<:Real,N,CT<:RealOrComplex{T}} = sqrt.(maximum(abs.(p).+η; dims=N))
-norm21(v::AbstractArray{CT,N}; η::T=T(0)) where {T<:Real,N,CT<:RealOrComplex{T}} = sum(ptnorm2(v; η=η))
-norm22(v::AbstractArray{CT,N}; η::T=T(0)) where {T<:Real,N,CT<:RealOrComplex{T}} = sqrt(sum(ptnorm2(v; η=η).^2))
-norm2Inf(v::AbstractArray{CT,N}; η::T=T(0)) where {T<:Real,N,CT<:RealOrComplex{T}} = maximum(ptnorm2(v; η=η))
+    # Dual to primal solution
+    return project!(y-λ*(g.wprox.linear_operator'*p), g.indicator.C, x)
+
+end
+
+function project!(y::AbstractArray{CT,N1}, ε::T, g::WeightedProxPlusIndicator{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
+
+    # Objective function (dual problem)
+    f = wprox_plus_indicator_proxobj(g.wprox.linear_operator, y, T(1), g.indicator.C)+conjugate(indicator(g.wprox.prox ≤ ε))
+
+    # Minimization (dual variable)
+    optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
+    p0 = similar(y, range_size(g.wprox.linear_operator)); p0 .= 0
+    p = minimize(f, p0, optimizer)
+
+    # Dual to primal solution
+    return project!(y-g.wprox.linear_operator'*p, g.indicator.C, x)
+
+end

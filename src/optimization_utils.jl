@@ -9,7 +9,7 @@ export spectral_radius
 
 ## FISTA options
 
-mutable struct OptimizerFISTA{T<:Real}<:DiffPlusProxOptimizer
+mutable struct OptimizerFISTA{T<:Real}<:AbstractDiffPlusProxOptimizer
     Lipschitz_constant::T
     Nesterov::Bool
     reset_counter::Union{Nothing,Integer}
@@ -101,9 +101,9 @@ minimize(fun::DiffPlusProxFunction{CT,N}, initial_estimate::AbstractArray{CT,N},
 
 ## Least-squares linear problem routines
 
-leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::ProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = minimize!(leastsquares_misfit(A, b)+g, initial_estimate, optimizer, x)
+leastsquares_solve!(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::AbstractProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}, x::AbstractArray{CT,N1}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = minimize!(leastsquares_misfit(A, b)+g, initial_estimate, optimizer, x)
 
-leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::ProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, g, initial_estimate, optimizer, similar(initial_estimate))
+leastsquares_solve(A::AbstractLinearOperator{CT,N1,N2}, b::AbstractArray{CT,N2}, g::AbstractProximableFunction{CT,N1}, initial_estimate::AbstractArray{CT,N1}, optimizer::OptimizerFISTA{T}) where {T<:Real,N1,N2,CT<:RealOrComplex{T}} = leastsquares_solve!(A, b, g, initial_estimate, optimizer, similar(initial_estimate))
 
 
 # Other utils

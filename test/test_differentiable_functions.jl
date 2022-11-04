@@ -1,6 +1,5 @@
 using LinearAlgebra, ConvexOptimizationUtils, AbstractLinearOperators, Test, Random
 Random.seed!(123)
-include("test_utils.jl")
 
 # Random input
 T = Float64
@@ -21,4 +20,4 @@ J = leastsquares_misfit(A, y)
 
 # Gradient test
 x = randn(T, n...)
-test_grad(J, x; step=T(1e-5), rtol=T(1e-6))
+@test test_grad(J, x; step=T(1e-5), rtol=T(1e-6))

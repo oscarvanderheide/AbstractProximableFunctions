@@ -1,6 +1,5 @@
 using LinearAlgebra, ConvexOptimizationUtils, Test, AbstractLinearOperators, Random
 Random.seed!(123)
-include("./test_utils.jl")
 
 # Random data
 T = Complex{Float64}
@@ -26,7 +25,7 @@ for dim = 1:3
 
         # Gradient test (proxy)
         fun = proxy_objfun(g, λ)
-        test_grad(fun, y; step=t, rtol=rtol)
+        @test test_grad(fun, y; step=t, rtol=rtol)
 
         # Projection test
         ε = 0.8*g(y)
@@ -35,7 +34,7 @@ for dim = 1:3
 
         ## Gradient test (projection)
         fun = proj_objfun(g, ε)
-        test_grad(fun, y; step=t, rtol=rtol)
+        @test test_grad(fun, y; step=t, rtol=rtol)
 
     end
 end

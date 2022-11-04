@@ -1,6 +1,5 @@
 using LinearAlgebra, ConvexOptimizationUtils, AbstractLinearOperators, Test, Random
 Random.seed!(123)
-include("test_utils.jl")
 
 # Random input
 T = Float64
@@ -18,8 +17,8 @@ y = project(x, C)
 g = indicator(C)
 fun = proxy_objfun(g, T(0.1))
 y = randn(T, 2, 3, 4)
-test_grad(fun, y; step=1e-4, rtol=1e-3)
+@test test_grad(fun, y; step=1e-4, rtol=1e-3)
 
 fun = proj_objfun(g, T(0.1))
 y = randn(T, 2, 3, 4)
-test_grad(fun, y; step=1e-4, rtol=1e-3)
+@test test_grad(fun, y; step=1e-4, rtol=1e-3)
