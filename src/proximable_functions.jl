@@ -53,14 +53,14 @@ end
 # Weighted proximable + indicator
 
 struct WeightedProxPlusIndicator{T,N1,N2}<:ProxPlusIndicator{T,N1}
-    wprox::WeightedProximableFunction{T,N1,N2}
+    wprox::AbstractWeightedProximableFunction{T,N1,N2}
     indicator::IndicatorFunction{T,N1}
 end
 
-Base.:+(g::WeightedProximableFunction{T,N1,N2}, δ::IndicatorFunction{T,N1}) where {T,N1,N2} = WeightedProxPlusIndicator{T,N1,N2}(g, δ)
-Base.:+(δ::IndicatorFunction{T,N1}, g::WeightedProximableFunction{T,N1,N2}) where {T,N1,N2} = g+δ
+Base.:+(g::AbstractWeightedProximableFunction{T,N1,N2}, δ::IndicatorFunction{T,N1}) where {T,N1,N2} = WeightedProxPlusIndicator{T,N1,N2}(g, δ)
+Base.:+(δ::IndicatorFunction{T,N1}, g::AbstractWeightedProximableFunction{T,N1,N2}) where {T,N1,N2} = g+δ
 
-fun_eval(g::WeightedProxPlusIndicator{T,N1,N2}, x::AbstractArray{T,N1}) where {T,N1,N2} = (x ∈ g.indicator.C) ? g.wprox(x) : T(Inf)
+fun_eval(g::AbstractWeightedProxPlusIndicator{T,N1,N2}, x::AbstractArray{T,N1}) where {T,N1,N2} = (x ∈ g.indicator.C) ? g.wprox(x) : T(Inf)
 
 get_optimizer(g::WeightedProxPlusIndicator) = get_optimizer(g.wprox)
 
