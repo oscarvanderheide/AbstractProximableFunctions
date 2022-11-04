@@ -1,6 +1,6 @@
 #: Utilities for proximable functions
 
-export WeightedProximableFunction, weighted_prox
+export WeightedProximableFunction, weighted_prox, get_linear_operator, get_prox
 
 
 # Proximable + linear operator
@@ -18,34 +18,37 @@ fun_eval(g::WeightedProximableFunction{T,N1,N2}, x::AbstractArray{T,N1}) where {
 
 get_optimizer(g::WeightedProximableFunction) = get_optimizer(g.optimizer, get_optimizer(g.prox))
 
-function proxy!(y::AbstractArray{CT,N1}, λ::T, g::WeightedProximableFunction{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
+get_linear_operator(g::WeightedProximableFunction) = g.linear_operator
+get_prox(g::WeightedProximableFunction) = g.prox
+
+function proxy!(y::AbstractArray{CT,N1}, λ::T, g::AbstractWeightedProximableFunction{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
     # Objective function (dual problem)
-    f = leastsquares_misfit(λ*g.linear_operator', y)+λ*conjugate(g.prox)
+    f = leastsquares_misfit(λ*get_linear_operator(g)', y)+λ*conjugate(get_prox(g))
 
     # Minimization (dual variable)
     optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
     optimizer = set_Lipschitz_constant(optimizer, λ^2*Lipschitz_constant(optimizer))
-    p0 = similar(y, range_size(g.linear_operator)); p0 .= 0
+    p0 = similar(y, range_size(get_linear_operator(g))); p0 .= 0
     p = minimize(f, p0, optimizer)
 
     # Dual to primal solution
-    return x .= y-λ*(g.linear_operator'*p)
+    return x .= y-λ*(get_linear_operator(g)'*p)
 
 end
 
-function project!(y::AbstractArray{CT,N1}, ε::T, g::WeightedProximableFunction{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
+function project!(y::AbstractArray{CT,N1}, ε::T, g::AbstractWeightedProximableFunction{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
     # Objective function (dual problem)
-    f = leastsquares_misfit(g.linear_operator', y)+conjugate(indicator(g.prox ≤ ε))
+    f = leastsquares_misfit(get_linear_operator(g)', y)+conjugate(indicator(get_prox(g) ≤ ε))
 
     # Minimization (dual variable)
     optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
-    p0 = similar(y, range_size(g.linear_operator)); p0 .= 0
+    p0 = similar(y, range_size(get_linear_operator(g))); p0 .= 0
     p = minimize(f, p0, optimizer)
 
     # Dual to primal solution
-    return x .= y-g.linear_operator'*p
+    return x .= y-get_linear_operator(g)'*p
 
 end
 
