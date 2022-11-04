@@ -3,7 +3,7 @@
 export AbstractConvexOptimizer, AbstractDiffPlusProxOptimizer
 export AbstractMinimizableFunction, minimize, minimize!, fun_eval, fun_eval!
 export AbstractDifferentiableFunction, grad_eval, grad_eval!, fungrad_eval, fungrad_eval!
-export AbstractProximableFunction, proxy, proxy!, project, project!
+export AbstractProximableFunction, AbstractWeightedProximableFunction, proxy, proxy!, project, project!
 export AbstractProjectionableSet
 
 
@@ -61,6 +61,7 @@ end
 
 is_specified(opt::Union{Nothing,AbstractConvexOptimizer}) = isnothing(opt) && error("The requested routines needs the specification of an optimizer")
 
+abstract type AbstractWeightedProximableFunction{T,N1,N2}<:AbstractProximableFunction{T,N1} end
 abstract type ProxPlusIndicator{T,N}<:AbstractProximableFunction{T,N} end
 
 

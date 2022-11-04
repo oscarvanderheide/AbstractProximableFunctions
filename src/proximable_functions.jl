@@ -5,7 +5,7 @@ export WeightedProximableFunction, weighted_prox
 
 # Proximable + linear operator
 
-struct WeightedProximableFunction{T,N1,N2}<:AbstractProximableFunction{T,N1}
+struct WeightedProximableFunction{T,N1,N2}<:AbstractWeightedProximableFunction{T,N1,N2}
     prox::AbstractProximableFunction{T,N2}
     linear_operator::AbstractLinearOperator{T,N1,N2}
     optimizer::Union{Nothing,AbstractConvexOptimizer}
