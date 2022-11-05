@@ -98,30 +98,30 @@ end
 function proxy!(y::AbstractArray{CT,N1}, λ::T, g::WeightedProxPlusIndicator{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
     # Objective function (dual problem)
-    f = wprox_plus_indicator_proxobj(g.wprox.linear_operator, y, λ, g.indicator.C)+λ*conjugate(g.wprox.prox)
+    f = wprox_plus_indicator_proxobj(get_linear_operator(g.wprox), y, λ, g.indicator.C)+λ*conjugate(get_prox(g.wprox))
 
     # Minimization (dual variable)
     optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
     optimizer = set_Lipschitz_constant(optimizer, λ^2*Lipschitz_constant(optimizer))
-    p0 = similar(y, range_size(g.wprox.linear_operator)); p0 .= 0
+    p0 = similar(y, range_size(get_linear_operator(g.wprox))); p0 .= 0
     p = minimize(f, p0, optimizer)
 
     # Dual to primal solution
-    return project!(y-λ*(g.wprox.linear_operator'*p), g.indicator.C, x)
+    return project!(y-λ*(get_linear_operator(g.wprox)'*p), g.indicator.C, x)
 
 end
 
 function project!(y::AbstractArray{CT,N1}, ε::T, g::WeightedProxPlusIndicator{CT,N1,N2}, x::AbstractArray{CT,N1}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N1,N2,CT<:RealOrComplex{T}}
 
     # Objective function (dual problem)
-    f = wprox_plus_indicator_proxobj(g.wprox.linear_operator, y, T(1), g.indicator.C)+conjugate(indicator(g.wprox.prox ≤ ε))
+    f = wprox_plus_indicator_proxobj(get_linear_operator(g.wprox), y, T(1), g.indicator.C)+conjugate(indicator(get_prox(g.wprox) ≤ ε))
 
     # Minimization (dual variable)
     optimizer = get_optimizer(optimizer, g); is_specified(optimizer)
-    p0 = similar(y, range_size(g.wprox.linear_operator)); p0 .= 0
+    p0 = similar(y, range_size(get_linear_operator(g.wprox))); p0 .= 0
     p = minimize(f, p0, optimizer)
 
     # Dual to primal solution
-    return project!(y-g.wprox.linear_operator'*p, g.indicator.C, x)
+    return project!(y-get_linear_operator(g.wprox)'*p, g.indicator.C, x)
 
 end
