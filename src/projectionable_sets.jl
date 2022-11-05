@@ -27,7 +27,7 @@ end
 indicator(C::AbstractProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N}(C)
 δ(C::AbstractProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N}(C)
 
-(δC::IndicatorFunction{CT,N})(x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = (x ∈ δC.C) ? T(0) : T(Inf)
+fun_eval(δC::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = (x ∈ δC.C) ? T(0) : T(Inf)
 
 proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x; optimizer=optimizer)
 project!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x; optimizer=optimizer)
