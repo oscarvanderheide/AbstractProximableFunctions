@@ -1,6 +1,6 @@
 #: Utilities for proximable functions
 
-export WeightedProximableFunction, weighted_prox, get_linear_operator, get_prox
+export WeightedProximableFunction, weighted_prox, get_optimizer, get_linear_operator, get_prox
 
 
 # Proximable + linear operator
