@@ -3,7 +3,7 @@
 export AbstractArgMinOptions, ExactArgMin
 export AbstractMinimizableFunction, argmin!, fun_eval
 export AbstractDifferentiableFunction, grad_eval, grad_eval!, fungrad_eval, fungrad_eval!
-export AbstractProximableFunction, proxy, proxy!, project, project!
+export AbstractProximableFunction, proxy, proxy!, project, project!, AbstractWeightedProximableFunction
 export AbstractProjectionableSet
 
 
@@ -57,6 +57,11 @@ proxy(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}, option
 project(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, ExactArgMin(), similar(y))
 project!(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, ExactArgMin(), x)
 project(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}, options::AbstractArgMinOptions) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, options, similar(y))
+
+abstract type AbstractWeightedProximableFunction{T,N}<:AbstractProximableFunction{T,N} end
+
+# get_prox(g::AbstractWeightedProximableFunction{T,N}) where {T,N} = ...
+# get_linear_operator(g::AbstractWeightedProximableFunction{T,N}) where {T,N} = ...
 
 
 ## Convex sets
