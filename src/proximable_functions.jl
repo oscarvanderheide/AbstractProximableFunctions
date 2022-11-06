@@ -62,7 +62,7 @@ end
 Base.:+(g::AbstractProximableFunction{T,N}, δ::IndicatorFunction{T,N}) where {T,N} = ProxPlusIndicator{T,N}(g, δ)
 Base.:+(δ::IndicatorFunction{T,N}, g::AbstractProximableFunction{T,N}) where {T,N} = g+δ
 
-fun_eval(g::ProxPlusIndicator{T,N}, x::AbstractArray{T,N}) where {T,N} = (x ∈ g.indicator.C) ? g.prox(x) : T(Inf)
+fun_eval(g::ProxPlusIndicator{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = (x ∈ g.indicator.C) ? g.prox(x) : T(Inf)
 
 struct ProxPlusIndicatorProxObj{T,N}<:AbstractDifferentiableFunction{T,N}
     y::AbstractArray{T,N}
@@ -135,7 +135,7 @@ end
 Base.:+(g::AbstractWeightedProximableFunction{T,N}, δ::IndicatorFunction{T,N}) where {T,N} = WeightedProxPlusIndicator{T,N}(g, δ)
 Base.:+(δ::IndicatorFunction{T,N}, g::AbstractWeightedProximableFunction{T,N}) where {T,N} = g+δ
 
-fun_eval(g::WeightedProxPlusIndicator{T,N}, x::AbstractArray{T,N}) where {T,N} = (x ∈ g.indicator.C) ? g.wprox(x) : T(Inf)
+fun_eval(g::WeightedProxPlusIndicator{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = (x ∈ g.indicator.C) ? g.wprox(x) : T(Inf)
 
 struct WeightedProxPlusIndicatorProxObj{T,N1,N2}<:AbstractDifferentiableFunction{T,N2}
     linear_operator::AbstractLinearOperator{T,N1,N2}
