@@ -21,27 +21,16 @@ for dim = 1:3
 
     for g_ = [weighted_prox(mixed_norm(T,dim,2,2), A), weighted_prox(mixed_norm(T,dim,2,1), A), weighted_prox(mixed_norm(T,dim,2,Inf), A)]
 
-        # # Proxy
+        # Proxy
         g = g_+δ
-        λ = 0.5*norm(y)^2/g_(y)
-        x = proxy(y, λ, g, opt)
-
-        # Projection test
-        @test x ∈ C
-
-        # Gradient test (proxy)
-        fun = proxy_objfun(g, λ; options=opt)
-        @test test_grad(fun, y; step=t, rtol=rtol)
-
-        # Projection test
         ε = 0.1*g_(y)
-        x = project(y, ε, g, opt)
-        @test (g(x) ≤ ε) || (abs(g(x)-ε) ≤ rtol*ε)
-        @test x ∈ C
 
-        ## Gradient test (projection)
-        fun = proj_objfun(g, ε; options=opt)
-        @test test_grad(fun, y; step=t, rtol=rtol)
+        # Indicator
+        h = indicator(g ≤ ε)
+
+        # Prox/Proj
+        proxy(y, 1.0, h, opt)
+        project(y, 1.0, h, opt)
 
     end
 end

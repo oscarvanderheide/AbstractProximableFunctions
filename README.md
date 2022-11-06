@@ -10,18 +10,18 @@ y = randn(Float32, 64, 64)
 obj = leastsquares_misfit(A, y)
 
 # Proximal function
-g = norm(Float32, 2, 2) # 2-norm for 2-D images
+g = norm(Float32, 2, 1) # l1-norm for 2-D images
 
 # Hard constraints
 C = zero_set(randn(Float32, 64, 64) .> 0f0)
 
 # Setup FISTA solver
 ρ = 1.01f0*spectral_radius(A*A'; niter=10)
-opt = FISTA_optimizer(ρ; Nesterov=true, niter=100, reset_counter=20, verbose=false, fun_history=false)
+opt = conjproj_FISTA(ρ; Nesterov=true, niter=100, reset_counter=20, verbose=false, fun_history=false)
 
 # Iterative solution
 x0 = zeros(Float32, size(y))
-x = minimize(obj+(g+indicator(C)), x0, opt)
+x = argmin(obj+(g+indicator(C)), x0, opt)
 ```
 
 This package is highly indebted to [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl) and related projects.

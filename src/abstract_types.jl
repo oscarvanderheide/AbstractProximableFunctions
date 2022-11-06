@@ -1,37 +1,41 @@
 #: Abstract functional types
 
-export AbstractConvexOptimizer, AbstractDiffPlusProxOptimizer
-export AbstractMinimizableFunction, minimize, minimize!, fun_eval, fun_eval!
+export AbstractArgMinOptions, ExactArgMin
+export AbstractMinimizableFunction, argmin!, fun_eval
 export AbstractDifferentiableFunction, grad_eval, grad_eval!, fungrad_eval, fungrad_eval!
-export AbstractProximableFunction, AbstractWeightedProximableFunction, proxy, proxy!, project, project!
+export AbstractProximableFunction, proxy, proxy!, project, project!
 export AbstractProjectionableSet
 
 
-## Optimizers
+## Argmin option types
 
-abstract type AbstractConvexOptimizer end
-abstract type AbstractDiffPlusProxOptimizer<:AbstractConvexOptimizer end
+abstract type AbstractArgMinOptions end
+struct ExactArgMin<:AbstractArgMinOptions end
+
+not_implemented(::ExactArgMin) = error("Exact minimization has not been implemented!")
 
 
 ## Minimizable functions
 
 abstract type AbstractMinimizableFunction{T,N} end
 
-# minimize!(fun::AbstractMinimizableFunction{T,N}, x0::AbstractArray{T,N}, x::AbstractArray{T,N}; optimizer::Optimizer) where {T,N} = ...
+# argmin!(fun::AbstractMinimizableFunction{T,N}, x0::AbstractArray{T,N}, options::AbstractArgMinOptions, x::AbstractArray{T,N}) where {T,N} = ...
 # fun_eval(fun::AbstractMinimizableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = ...
 
-minimize(fun::AbstractMinimizableFunction{T,N}, x0::AbstractArray{T,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T,N} = minimize!(fun, x0, similar(x0); optimizer=optimizer)
+Base.argmin(fun::AbstractMinimizableFunction{T,N}, x0::AbstractArray{T,N}, options::AbstractArgMinOptions) where {T,N} = argmin!(fun, x0, options, similar(x0))
 
 (fun::AbstractMinimizableFunction{T,N})(x::AbstractArray{T,N}) where {T,N} = fun_eval(fun, x)
 
 
 ## Differentiable functions
 
-abstract type AbstractDifferentiableFunction{T,N}<:AbstractMinimizableFunction{T,N} end
+abstract type AbstractDifferentiableFunction{T,N} end
 
 # fun_eval(fun::AbstractDifferentiableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = ...
 # grad_eval!(fun::AbstractDifferentiableFunction{T,N}, x::AbstractArray{T,N}, gradient::AbstractArray{T,N}) where {T,N} = ...
 # fungrad_eval!(fun::AbstractDifferentiableFunction{T,N}, x::AbstractArray{T,N}, gradient::AbstractArray{T,N}) where {T,N} = ...
+
+(fun::AbstractDifferentiableFunction{T,N})(x::AbstractArray{T,N}) where {T,N} = fun_eval(fun, x)
 
 grad_eval(fun::AbstractDifferentiableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = (g = similar(x); grad_eval!(fun, x, g); return g)
 
@@ -40,29 +44,19 @@ fungrad_eval(fun::AbstractDifferentiableFunction{T,N}, x::AbstractArray{T,N}) wh
 
 ## Proximable functions
 
-abstract type AbstractProximableFunction{T,N}<:AbstractMinimizableFunction{T,N} end
+abstract type AbstractProximableFunction{T,N} end
 
 # fun_eval(fun::AbstractProximableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = ...
-# proxy!(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}; optimizer::Optimizer) where {T<:Real,N,CT<:RealOrComplex{T}} = ...
-# get_optimizer(g::AbstractProximableFunction) = ...
+# proxy!(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}, options::AbstractArgMinOptions, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = ...
 
-proxy(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ, g, similar(y); optimizer=optimizer)
-project(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, similar(y); optimizer=optimizer)
+(fun::AbstractProximableFunction{T,N})(x::AbstractArray{T,N}) where {T,N} = fun_eval(fun, x)
 
-function get_optimizer(optimizer::Union{Nothing,AbstractConvexOptimizer,AbstractProximableFunction}...)
-    @inbounds for opt = optimizer
-        if ~isnothing(opt)
-            (opt isa AbstractConvexOptimizer) && (return opt)
-            (opt isa AbstractProximableFunction) && ~isnothing(get_optimizer(opt)) && (return get_optimizer(opt))
-        end
-    end
-    return nothing
-end
-
-is_specified(opt::Union{Nothing,AbstractConvexOptimizer}) = isnothing(opt) && error("The requested routines needs the specification of an optimizer")
-
-abstract type AbstractWeightedProximableFunction{T,N1,N2}<:AbstractProximableFunction{T,N1} end
-abstract type ProxPlusIndicator{T,N}<:AbstractProximableFunction{T,N} end
+proxy(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ, g, ExactArgMin(), similar(y))
+proxy!(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ, g, ExactArgMin(), x)
+proxy(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}, options::AbstractArgMinOptions) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ, g, options, similar(y))
+project(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, ExactArgMin(), similar(y))
+project!(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, ExactArgMin(), x)
+project(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}, options::AbstractArgMinOptions) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, ε, g, options, similar(y))
 
 
 ## Convex sets
@@ -70,6 +64,8 @@ abstract type ProxPlusIndicator{T,N}<:AbstractProximableFunction{T,N} end
 abstract type AbstractProjectionableSet{T,N} end
 
 ## Base.in(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}) where {T,N} = ...
-## project!(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, y::AbstractArray{T,N}; optimizer::Optimizer) = ...
+## project!(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, options::AbstractArgMinOptions, y::AbstractArray{T,N}) = ...
 
-project(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T,N} = project!(x, C, similar(x); optimizer=optimizer)
+project(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}) where {T,N} = project!(x, C, ExactArgMin(), similar(x))
+project!(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, y::AbstractArray{T,N}) where {T,N} = project!(x, C, ExactArgMin(), y)
+project(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, options::AbstractArgMinOptions) where {T,N} = project!(x, C, options, similar(x))

@@ -13,7 +13,7 @@ zero_set(T::DataType, is_zero::AbstractArray{Bool,N}) where N = ZeroSet{T,N}(is_
 
 Base.in(x::AbstractArray{T,N}, C::ZeroSet{T,N}) where {T,N} = all(x[C.is_zero] .== 0)
 
-function project!(x::AbstractArray{T,N}, C::ZeroSet{T,N}, y::AbstractArray{T,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T,N}
+function project!(x::AbstractArray{T,N}, C::ZeroSet{T,N}, ::ExactArgMin, y::AbstractArray{T,N}) where {T,N}
     idx_nonzero = (!).(C.is_zero)
     y[idx_nonzero] .= x[idx_nonzero]
     y[C.is_zero] .= 0

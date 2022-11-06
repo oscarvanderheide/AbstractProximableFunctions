@@ -6,16 +6,16 @@ export IndicatorFunction, indicator, δ
 
 # Sub-level sets with proximable functions
 
-struct SublevelSet{T,N,FT<:AbstractMinimizableFunction{T,N}}<:AbstractProjectionableSet{T,N}
-    fun::FT
+struct SublevelSet{T,N}<:AbstractProjectionableSet{T,N}
+    fun::AbstractProximableFunction{T,N}
     level::Real
 end
 
-Base.:≤(g::FT, ε::T) where {T<:Real,N,CT<:RealOrComplex{T},FT<:AbstractMinimizableFunction{CT,N}} = SublevelSet{CT,N,FT}(g, ε)
+Base.:≤(g::AbstractProximableFunction{CT,N}, ε::T) where {T<:Real,N,CT<:RealOrComplex{T}} = SublevelSet{CT,N}(g, ε)
 
-Base.in(x::AbstractArray{T,N}, C::SublevelSet{T,N,FT}) where {T<:RealOrComplex,N,FT<:AbstractMinimizableFunction{T,N}} = C.fun(x) ≤ C.level
+Base.in(x::AbstractArray{T,N}, C::SublevelSet{T,N}) where {T<:RealOrComplex,N} = C.fun(x) ≤ C.level
 
-project!(x::AbstractArray{T,N}, C::SublevelSet{T,N,FT}, y::AbstractArray{T,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T,N,FT<:AbstractProximableFunction{T,N}} = project!(x, C.level, C.fun, y; optimizer=optimizer)
+project!(x::AbstractArray{T,N}, C::SublevelSet{T,N}, options::AbstractArgMinOptions, y::AbstractArray{T,N}) where {T,N} = project!(x, C.level, C.fun, options, y)
 
 
 # Indicator function
@@ -29,5 +29,5 @@ indicator(C::AbstractProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N
 
 fun_eval(δC::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = (x ∈ δC.C) ? T(0) : T(Inf)
 
-proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x; optimizer=optimizer)
-project!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, x::AbstractArray{CT,N}; optimizer::Union{Nothing,AbstractConvexOptimizer}=nothing) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, x; optimizer=optimizer)
+proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, options::AbstractArgMinOptions, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, options, x)
+project!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, options::AbstractArgMinOptions, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.C, options, x)

@@ -16,10 +16,10 @@ L = T(1.1)*spectral_radius(A'*A; niter=100)
 niter = 100
 Nesterov = true
 # Nesterov = false
-opt_fista = FISTA_optimizer(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false, fun_history=true)
+opt_fista = FISTA(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false, fun_history=true)
 Aop = linear_operator(T, size(xtrue), size(xtrue), x->A*x, y->A'*y)
 f = leastsquares_misfit(Aop, b)
-x = minimize(f+g, x0, opt_fista)
+x = argmin(f+g, x0, opt_fista)
 fval_fista = fun_history(opt_fista)
 @test x ≈ xtrue rtol=rtol
 
