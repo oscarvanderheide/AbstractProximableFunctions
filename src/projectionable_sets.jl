@@ -30,9 +30,6 @@ indicator(C::AbstractProjectionableSet{T,N}) where {T,N} = IndicatorFunction{T,N
 
 get_set(δ::IndicatorFunction) = δ.set
 
-proxy!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, options::AbstractArgminMethod, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.set, options, x)
-project!(y::AbstractArray{CT,N}, ::T, δ::IndicatorFunction{CT,N}, options::AbstractArgminMethod, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, δ.set, options, x)
-
 
 # Homogeneous constraints via masking grid function
 

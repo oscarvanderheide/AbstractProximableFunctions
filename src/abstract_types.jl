@@ -93,11 +93,14 @@ project(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, options::Abstr
 
 ## Indicator functions
 
-abstract type AbstractIndicatorFunction{T,N}<: AbstractProximableFunction{T,N} end
+abstract type AbstractIndicatorFunction{T,N}<:AbstractProximableFunction{T,N} end
 
 # get_set(g::AbstractIndicatorFunction{T,N}) where {T,N} = ...
 
 fun_eval(δC::AbstractIndicatorFunction{CT,N}, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = (x ∈ get_set(δC)) ? T(0) : T(Inf)
+
+proxy!(y::AbstractArray{CT,N}, ::T, δ::AbstractIndicatorFunction{CT,N}, options::AbstractArgminMethod, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, get_set(δ), options, x)
+project!(y::AbstractArray{CT,N}, ::T, δ::AbstractIndicatorFunction{CT,N}, options::AbstractArgminMethod, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, get_set(δ), options, x)
 
 
 ## Proximable + indicator functions
