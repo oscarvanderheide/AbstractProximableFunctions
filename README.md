@@ -17,7 +17,7 @@ C = zero_set(randn(Float32, 64, 64) .> 0f0)
 
 # Setup FISTA solver
 ρ = 1.01f0*spectral_radius(A*A'; niter=10)
-opt = conjproj_FISTA(ρ; Nesterov=true, niter=100, reset_counter=20, verbose=false, fun_history=false)
+opt = conjugateproject_FISTA(ρ; Nesterov=true, niter=100, reset_counter=20, verbose=false, fun_history=false)
 
 # Iterative solution
 x0 = zeros(Float32, size(y))

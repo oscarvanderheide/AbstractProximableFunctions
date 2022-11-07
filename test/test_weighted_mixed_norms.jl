@@ -15,7 +15,7 @@ for dim = 1:3
     v = randn(T, sz..., dim)
     A = linear_operator(T, sz, (sz...,dim), x->v.*x, y->dropdims(sum(conj(v).*y; dims=dim+1); dims=dim+1))
     ρ = 1.01*spectral_radius(A*A'; niter=200)
-    opt = conj_FISTA(ρ; Nesterov=true, niter=400, reset_counter=20, verbose=false, fun_history=false)
+    opt = conjugate_FISTA(ρ; Nesterov=true, niter=400, reset_counter=20, verbose=false, fun_history=false)
 
     for g = [weighted_prox(mixed_norm(T,dim,2,2), A), weighted_prox(mixed_norm(T,dim,2,1), A), weighted_prox(mixed_norm(T,dim,2,Inf), A)]
 
