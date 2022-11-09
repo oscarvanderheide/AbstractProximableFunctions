@@ -16,7 +16,7 @@ Base.:≤(g::AbstractProximableFunction{CT,N}, ε::T) where {T<:Real,N,CT<:RealO
 
 Base.in(x::AbstractArray{T,N}, C::SublevelSet{T,N}) where {T<:RealOrComplex,N} = C.fun(x) ≤ C.level
 
-project!(x::AbstractArray{T,N}, C::SublevelSet{T,N}, options::AbstractArgminMethod, y::AbstractArray{T,N}) where {T,N} = project!(x, C.level, C.fun, options, y)
+project!(x::AbstractArray{T,N}, C::SublevelSet{T,N}, options::AbstractMinOptions, y::AbstractArray{T,N}) where {T,N} = project!(x, C.level, C.fun, options, y)
 
 
 # Indicator function

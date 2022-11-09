@@ -10,10 +10,10 @@ export test_grad
 struct ProxyObjFun{T,N}<:AbstractDifferentiableFunction{T,N}
     prox::AbstractProximableFunction{T,N}
     weight::Real
-    options::AbstractArgminMethod
+    options::AbstractMinOptions
 end
 
-proxy_objfun(g::AbstractProximableFunction{CT,N}, λ::T; options::AbstractArgminMethod=ExactArgmin()) where {T<:Real,N,CT<:RealOrComplex{T}} = ProxyObjFun{CT,N}(g, λ, options)
+proxy_objfun(g::AbstractProximableFunction{CT,N}, λ::T; options::AbstractMinOptions=ExactArgmin()) where {T<:Real,N,CT<:RealOrComplex{T}} = ProxyObjFun{CT,N}(g, λ, options)
 
 function fun_eval(fun::ProxyObjFun{T,N}, y::AbstractArray{T,N}) where {T,N}
     x̄ = proxy(y, fun.weight, fun.prox, fun.options)
@@ -37,10 +37,10 @@ end
 struct ProjObjFun{T,N}<:AbstractDifferentiableFunction{T,N}
     prox::AbstractProximableFunction{T,N}
     level::Real
-    options::AbstractArgminMethod
+    options::AbstractMinOptions
 end
 
-proj_objfun(g::AbstractProximableFunction{CT,N}, ε::T; options::AbstractArgminMethod=ExactArgmin()) where {T<:Real,N,CT<:RealOrComplex{T}} = ProjObjFun{CT,N}(g, ε, options)
+proj_objfun(g::AbstractProximableFunction{CT,N}, ε::T; options::AbstractMinOptions=ExactArgmin()) where {T<:Real,N,CT<:RealOrComplex{T}} = ProjObjFun{CT,N}(g, ε, options)
 
 function fun_eval(fun::ProjObjFun{T,N}, y::AbstractArray{T,N}) where {T,N}
     return norm(project(y, fun.level, fun.prox, fun.options)-y)^2/2

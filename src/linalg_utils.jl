@@ -64,8 +64,8 @@ Base.:/(fun::AbstractProximableFunction{CT,N}, scale::T) where {T<:Real,N,CT<:Re
 
 fun_eval(fun::ScaledProximableFunction{T,N}, x::AbstractArray{T,N}) where {T,N} = fun.scale*fun.fun(x)
 
-proxy!(y::AbstractArray{CT,N}, λ::T, g::ScaledProximableFunction{CT,N}, options::AbstractArgminMethod, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ*g.scale, g.fun, options, x)
-project!(y::AbstractArray{CT,N}, ε::T, g::ScaledProximableFunction{CT,N}, options::AbstractArgminMethod, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, g.scale/ε, g.fun, options, x)
+proxy!(y::AbstractArray{CT,N}, λ::T, g::ScaledProximableFunction{CT,N}, options::AbstractMinOptions, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = proxy!(y, λ*g.scale, g.fun, options, x)
+project!(y::AbstractArray{CT,N}, ε::T, g::ScaledProximableFunction{CT,N}, options::AbstractMinOptions, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = project!(y, g.scale/ε, g.fun, options, x)
 
 
 # Conjugation of proximable functions
@@ -77,7 +77,7 @@ end
 conjugate(g::AbstractProximableFunction{T,N}) where {T,N} = ConjugateProximableFunction{T,N}(g)
 conjugate(g::ConjugateProximableFunction) = g.fun
 
-function proxy!(y::AbstractArray{CT,N}, λ::T, g::ConjugateProximableFunction{CT,N}, options::AbstractArgminMethod, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}}
+function proxy!(y::AbstractArray{CT,N}, λ::T, g::ConjugateProximableFunction{CT,N}, options::AbstractMinOptions, x::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}}
     proxy!(y/λ, 1/λ, g.fun, options, x)
     return x .= y-λ*x
 end

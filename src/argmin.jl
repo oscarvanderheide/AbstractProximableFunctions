@@ -6,22 +6,24 @@ export ConjugateAndFISTA, conjugate_FISTA, ConjugateProjectAndFISTA, conjugatepr
 
 not_implemented() = error("This minimization method has not been implemented for this function!")
 
-argmin!(::AbstractMinimizableFunction{T,N}, ::AbstractArray{T,N}, ::AbstractArgminMethod, ::AbstractArray{T,N}) where {T,N} = not_implemented()
-proxy!(::AbstractArray{CT,N}, ::T, ::AbstractProximableFunction{CT,N}, ::AbstractArgminMethod, ::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = not_implemented()
-project!(::AbstractArray{CT,N}, ::T, ::AbstractProximableFunction{CT,N}, ::AbstractArgminMethod, ::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = not_implemented()
-project!(::AbstractArray{T,N}, ::AbstractProjectionableSet{T,N}, ::AbstractArgminMethod, ::AbstractArray{T,N}) where {T,N} = not_implemented()
+argmin!(::AbstractMinimizableFunction{T,N}, ::AbstractArray{T,N}, ::AbstractMinOptions, ::AbstractArray{T,N}) where {T,N} = not_implemented()
+proxy!(::AbstractArray{CT,N}, ::T, ::AbstractProximableFunction{CT,N}, ::AbstractMinOptions, ::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = not_implemented()
+project!(::AbstractArray{CT,N}, ::T, ::AbstractProximableFunction{CT,N}, ::AbstractMinOptions, ::AbstractArray{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = not_implemented()
+project!(::AbstractArray{T,N}, ::AbstractProjectionableSet{T,N}, ::AbstractMinOptions, ::AbstractArray{T,N}) where {T,N} = not_implemented()
 
 
-## Exact argmin options
+## Exact min/proxy options
 
-struct ExactArgmin<:AbstractArgminMethod end
+struct ExactMin{MT<:AbstractMinimizableFunction}<:AbstractMinOptions{MT} end
+struct ExactProxy{PT<:AbstractProximableFunction}<:AbstractProxyOptions{PT} end
 
-exact_argmin() = ExactArgmin()
+exact_min(MT::DataType) = ExactMin{MT}
+exact_proxy(PT::DataType) = ExactMin{PT}
 
 
 ## FISTA options
 
-mutable struct ArgminFISTA{T<:Real}<:AbstractArgminMethod
+mutable struct ArgminFISTA{T<:Real}<:AbstractMinOptions
     Lipschitz_constant::T
     Nesterov::Bool
     reset_counter::Union{Nothing,Integer}
@@ -96,7 +98,7 @@ end
 
 ## Conjugate-and-FISTA method
 
-struct ConjugateAndFISTA{T<:Real}<:AbstractArgminMethod
+struct ConjugateAndFISTA{T<:Real}<:AbstractMinOptions
     options_FISTA::ArgminFISTA{T}
 end
 
@@ -107,7 +109,7 @@ get_FISTA_options(method::ConjugateAndFISTA) = method.options_FISTA
 
 ## Conjugate-project-and-FISTA method
 
-struct ConjugateProjectAndFISTA{T<:Real}<:AbstractArgminMethod
+struct ConjugateProjectAndFISTA{T<:Real}<:AbstractMinOptions
     options_FISTA::ArgminFISTA{T}
 end
 
