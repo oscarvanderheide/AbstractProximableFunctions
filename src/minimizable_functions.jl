@@ -26,10 +26,11 @@ exact_argmin() = ExactArgmin()
 struct DiffPlusProxFunction{T,N}<:AbstractMinimizableFunction{T,N}
     diff::AbstractDifferentiableFunction{T,N}
     prox::AbstractProximableFunction{T,N}
+    options::AbstractArgminOptions
 end
 
-Base.:+(f::AbstractDifferentiableFunction{T,N}, g::AbstractProximableFunction{T,N}) where {T,N} = DiffPlusProxFunction{T,N}(f, g)
-Base.:+(g::AbstractProximableFunction{T,N}, f::AbstractDifferentiableFunction{T,N}) where {T,N} = f+g
+Base.:+(f::AbstractDifferentiableFunction{T,N}, g::AbstractProximableFunction{T,N}; options::AbstractArgminOptions=exact_argmin()) where {T,N} = DiffPlusProxFunction{T,N}(f, g, options)
+Base.:+(g::AbstractProximableFunction{T,N}, f::AbstractDifferentiableFunction{T,N}; options::AbstractArgminOptions=exact_argmin()) where {T,N} = +(f, g; options=options)
 
 
 ## FISTA options

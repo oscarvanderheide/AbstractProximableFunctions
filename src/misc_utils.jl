@@ -2,6 +2,7 @@
 
 export spectral_radius
 export test_grad
+export set_options
 
 
 function spectral_radius(A::Union{AbstractMatrix{T},AbstractLinearOperator{T,N,N}}; x::Union{Nothing,AbstractArray{T,N}}=nothing, niter::Int64=10) where {T,N}
@@ -29,3 +30,7 @@ function test_grad(fun::AbstractDifferentiableFunction{CT,N}, x::AbstractArray{C
     return isapprox((fp1-fm1)/step, real(dot(dx, Δx)); rtol=rtol)
 
 end
+
+set_options(op::DiffPlusProxFunction, options::AbstractArgminOptions) = +(op.diff, op.prox; options=options)
+set_options(op::ProxPlusIndicator, options::AbstractArgminOptions) = +(op.prox, op.indicator; options=options)
+set_options(op::WeightedProxPlusIndicator, options::AbstractArgminOptions) = +(op.wprox, op.indicator; options=options)

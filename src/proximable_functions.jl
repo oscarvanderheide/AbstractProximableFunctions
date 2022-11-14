@@ -118,10 +118,11 @@ options(g::ScaledProximableFunction) = options(g.fun)
 struct ProxPlusIndicator{T,N}<:AbstractProximableFunction{T,N}
     prox::AbstractProximableFunction{T,N}
     indicator::IndicatorFunction{T,N}
+    options::AbstractArgminOptions
 end
 
-Base.:+(g::AbstractProximableFunction{T,N}, δ::IndicatorFunction{T,N}) where {T,N} = ProxPlusIndicator{T,N}(g, δ)
-Base.:+(δ::IndicatorFunction{T,N}, g::AbstractProximableFunction{T,N}) where {T,N} = g+δ
+Base.:+(g::AbstractProximableFunction{T,N}, δ::IndicatorFunction{T,N}; options::AbstractArgminOptions=exact_argmin()) where {T,N} = ProxPlusIndicator{T,N}(g, δ, options)
+Base.:+(δ::IndicatorFunction{T,N}, g::AbstractProximableFunction{T,N}; options::AbstractArgminOptions=exact_argmin()) where {T,N} = +(g, δ; options=options)
 
 funeval(g::ProxPlusIndicator{T,N}, x::AbstractArray{T,N}) where {T,N} = g.prox(x)+g.indicator(x)
 
@@ -181,16 +182,19 @@ function proj!(y::AbstractArray{CT,N}, ε::T, g::ProxPlusIndicator{CT,N}, option
 
 end
 
+options(g::ProxPlusIndicator) = g.options
+
 
 ## Weighted proximable + indicator
 
 struct WeightedProxPlusIndicator{T,N}<:AbstractProximableFunction{T,N}
     wprox::WeightedProximableFunction{T,N}
     indicator::IndicatorFunction{T,N}
+    options::AbstractArgminOptions
 end
 
-Base.:+(g::WeightedProximableFunction{T,N}, δ::IndicatorFunction{T,N}) where {T,N} = WeightedProxPlusIndicator{T,N}(g, δ)
-Base.:+(δ::IndicatorFunction{T,N}, g::WeightedProximableFunction{T,N}) where {T,N} = g+δ
+Base.:+(g::WeightedProximableFunction{T,N}, δ::IndicatorFunction{T,N}; options::AbstractArgminOptions=exact_argmin()) where {T,N} = WeightedProxPlusIndicator{T,N}(g, δ, options)
+Base.:+(δ::IndicatorFunction{T,N}, g::WeightedProximableFunction{T,N}; options::AbstractArgminOptions=exact_argmin()) where {T,N} = +(g, δ; options=options)
 
 funeval(g::WeightedProxPlusIndicator{T,N}, x::AbstractArray{T,N}) where {T,N} = g.wprox(x)+g.indicator(x)
 
@@ -252,3 +256,5 @@ function proj!(y::AbstractArray{CT,N}, ε::T, g::WeightedProxPlusIndicator{CT,N}
     return proj!(y-wprox.linear_operator'*p, g.indicator.set, x)
 
 end
+
+options(g::WeightedProxPlusIndicator) = g.options

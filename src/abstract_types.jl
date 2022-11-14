@@ -1,8 +1,10 @@
 #: Main abstract functional types
 
+export AbstractEvaluableFunction, funeval
 export AbstractMinimizableFunction, AbstractArgminOptions, argmin, argmin!, options
 export AbstractProximableFunction, prox, prox!, proj, proj!
 export AbstractProjectionableSet
+export AbstractDifferentiableFunction, gradeval, gradeval!, fungradeval, fungradeval!
 
 
 ## Evaluable functions
@@ -55,7 +57,7 @@ proj(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}) where {T,N} = pro
 proj(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, options::AbstractArgminOptions) where {T,N} = proj!(x, C, options, similar(x))
 proj!(x::AT, C::AbstractProjectionableSet{T,N}, y::AT) where {T,N,AT<:AbstractArray{T,N}} = proj!(x, C, options(C), y)
 
-options(C::AbstractProjectionableSet) = exact_argmin()
+options(::AbstractProjectionableSet) = exact_argmin()
 
 
 ## Differentiable functions
