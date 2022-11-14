@@ -1,4 +1,4 @@
-#: Examples of projectionable sets
+#: Examples of projionable sets
 
 export SublevelSet
 export IndicatorFunction, indicator, δ
@@ -16,7 +16,7 @@ Base.:≤(g::AbstractProximableFunction{CT,N}, ε::T) where {T<:Real,N,CT<:RealO
 
 Base.in(x::AbstractArray{T,N}, C::SublevelSet{T,N}) where {T<:RealOrComplex,N} = C.fun(x) ≤ C.level
 
-project!(x::AbstractArray{T,N}, C::SublevelSet{T,N}, options::AbstractMinOptions, y::AbstractArray{T,N}) where {T,N} = project!(x, C.level, C.fun, options, y)
+proj!(x::AbstractArray{T,N}, C::SublevelSet{T,N}, options::AbstractArgminOptions, y::AbstractArray{T,N}) where {T,N} = proj!(x, C.level, C.fun, options, y)
 
 
 # Indicator function
@@ -41,7 +41,7 @@ zero_set(T::DataType, is_zero::AbstractArray{Bool,N}) where N = ZeroSet{T,N}(is_
 
 Base.in(x::AbstractArray{T,N}, C::ZeroSet{T,N}) where {T,N} = all(x[C.is_zero] .== 0)
 
-function project!(x::AbstractArray{T,N}, C::ZeroSet{T,N}, ::ExactArgmin, y::AbstractArray{T,N}) where {T,N}
+function proj!(x::AbstractArray{T,N}, C::ZeroSet{T,N}, ::ExactArgMin, y::AbstractArray{T,N}) where {T,N}
     idx_nonzero = (!).(C.is_zero)
     y[idx_nonzero] .= x[idx_nonzero]
     y[C.is_zero] .= 0

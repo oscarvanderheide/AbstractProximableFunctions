@@ -9,13 +9,13 @@ x = randn(T, 2, 3, 4)
 C = zero_set(T, x .> 0)
 
 # Projection test
-y = project(x, C)
+y = proj(x, C)
 @test norm(y[x .> 0]) ≈ 0 rtol=T(1e-6)
-@test project(y, C) ≈ y rtol=T(1e-6)
+@test proj(y, C) ≈ y rtol=T(1e-6)
 
 # Gradient test (indicator)
 g = indicator(C)
-fun = proxy_objfun(g, T(0.1))
+fun = prox_objfun(g, T(0.1))
 y = randn(T, 2, 3, 4)
 @test test_grad(fun, y; step=1e-4, rtol=1e-3)
 

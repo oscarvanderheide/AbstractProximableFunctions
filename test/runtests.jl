@@ -2,7 +2,7 @@ using ConvexOptimizationUtils, Test
 
 @testset "ConvexOptimizationUtils.jl" begin
     include("./test_differentiable_functions.jl")
-    include("./test_projectionable_sets.jl")
+    include("./test_projionable_sets.jl")
     include("./test_optimization_utils.jl")
     include("./test_norms.jl")
     include("./test_indicator.jl")

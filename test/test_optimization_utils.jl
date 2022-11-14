@@ -10,7 +10,7 @@ b = randn(T, 100)
 xtrue = A\b
 
 # Via minimize routine
-g = zero_prox(T, 1)
+g = zero_proxproj(T, 1)
 x0 = randn(T, 100)
 L = T(1.1)*spectral_radius(A'*A; niter=100)
 niter = 100

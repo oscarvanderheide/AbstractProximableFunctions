@@ -21,18 +21,18 @@ for dim = 1:3
 
         # Proxy
         λ = 0.5*norm(y)^2/g(y)
-        x = proxy(y, λ, g, opt)
+        x = prox(y, λ, g, opt)
 
-        # Gradient test (proxy)
-        fun = proxy_objfun(g, λ; options=opt)
+        # Gradient test (prox)
+        fun = prox_objfun(g, λ; options=opt)
         @test test_grad(fun, y; step=t, rtol=rtol)
 
         # Projection test
         ε = 0.1*g(y)
-        x = project(y, ε, g, opt)
+        x = proj(y, ε, g, opt)
         @test (g(x) ≤ ε) || (abs(g(x)-ε) ≤ rtol*ε)
 
-        ## Gradient test (projection)
+        ## Gradient test (projion)
         fun = proj_objfun(g, ε; options=opt)
         @test test_grad(fun, y; step=t, rtol=rtol)
 

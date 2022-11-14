@@ -13,15 +13,15 @@ for dim = 1:3, g = [mixed_norm(T,dim,2,2), mixed_norm(T,dim,2,1), mixed_norm(T,d
 
     # Proxy
     λ = 0.5*norm(y)^2/g(y)
-    x = proxy(y, λ, g)
+    x = prox(y, λ, g)
 
     # Gradient test
-    fun = proxy_objfun(g, λ)
+    fun = prox_objfun(g, λ)
     @test test_grad(fun, y; step=t, rtol=rtol)
 
     # Projection test
     ε = 0.1*g(y)
-    x = project(y, ε, g)
+    x = proj(y, ε, g)
     @test g(x) ≈ ε rtol=rtol
 
     ## Gradient test

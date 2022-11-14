@@ -1,4 +1,4 @@
-name = "ConvexOptimizationUtils"
+name = "AbstractProximableFunctions"
 uuid = "9ed10759-246d-4065-822b-90d32585fe69"
 authors = ["Gabrio Rizzuti <rizzuti.gabrio@gmail.com>"]
 version = "1.0.0"

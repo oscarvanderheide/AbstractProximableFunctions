@@ -1,6 +1,6 @@
-# ConvexOptimizationUtils
+# AbstractProximableFunctions
 
-Set of abstractions and utilities for computing proximal and projection operators of convex functionals
+Set of abstractions and utilities for computing proximal and projion operators of convex functionals
 
 Example: mix and match convex differentiable objectives, convex non-differentiable terms, and hard constraints!
 ```
@@ -17,11 +17,11 @@ C = zero_set(randn(Float32, 64, 64) .> 0f0)
 
 # Setup FISTA solver
 ρ = 1.01f0*spectral_radius(A*A'; niter=10)
-opt = conjugateproject_FISTA(ρ; Nesterov=true, niter=100, reset_counter=20, verbose=false, fun_history=false)
+opt = conjugateproj_FISTA(ρ; Nesterov=true, niter=100, reset_counter=20, verbose=false, fun_history=false)
 
 # Iterative solution
 x0 = zeros(Float32, size(y))
 x = argmin(obj+(g+indicator(C)), x0, opt)
 ```
 
-This package is highly indebted to [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl) and related projects.
+This package is highly indebted to [ProximalOperators.jl](https://github.com/JuliaFirstOrder/ProximalOperators.jl) and related projs.
