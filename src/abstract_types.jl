@@ -1,8 +1,8 @@
 #: Main abstract functional types
 
 export AbstractMinimizableFunction, AbstractArgminOptions, argmin, argmin!, options
-export AbstractProximableFunction, AbstractProximableOptions, prox, prox!, proj, proj!
-export AbstractProjectionableSet, AbstractProjectionableSetOptions
+export AbstractProximableFunction, prox, prox!, proj, proj!
+export AbstractProjectionableSet
 
 
 ## Evaluable functions
@@ -24,40 +24,38 @@ Base.argmin(fun::AbstractMinimizableFunction{T,N}, initial_estimate::AbstractArr
 Base.argmin(fun::AbstractMinimizableFunction{T,N}, initial_estimate::AbstractArray{T,N}) where {T<:RealOrComplex,N} = argmin!(fun, initial_estimate, options(fun), similar(initial_estimate))
 argmin!(fun::AbstractMinimizableFunction{T,N}, initial_estimate::AT, x::AT) where {T<:RealOrComplex,N,AT<:AbstractArray{T,N}} = argmin!(fun, initial_estimate, options(fun), x)
 
-options(::AbstractMinimizableFunction) = exact_argmin()
+options(f::AbstractMinimizableFunction) = exact(f)
 
 
 ## Proximable functions
 
 abstract type AbstractProximableFunction{T,N}<:AbstractEvaluableFunction{T,N} end
-abstract type AbstractProximableOptions end
-# prox!(g::AbstractProximableFunction{CT,N}, y::AT, λ::T, options::AbstractProximableOptions, x::AT) where {T<:Real,N,CT<:RealOrComplex{T},AT<:AbstractArray{CT,N}} = ...
-# proj!(g::AbstractProximableFunction{CT,N}, y::AT, ε::T, options::AbstractProximableOptions, x::AT) where {T<:Real,N,CT<:RealOrComplex{T},AT<:AbstractArray{CT,N}} = ...
+# prox!(g::AbstractProximableFunction{CT,N}, y::AT, λ::T, options::AbstractArgminOptions, x::AT) where {T<:Real,N,CT<:RealOrComplex{T},AT<:AbstractArray{CT,N}} = ...
+# proj!(g::AbstractProximableFunction{CT,N}, y::AT, ε::T, options::AbstractArgminOptions, x::AT) where {T<:Real,N,CT<:RealOrComplex{T},AT<:AbstractArray{CT,N}} = ...
 # options(g::AbstractProximableFunction) = ...
 
-prox(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = prox!(g, y, λ, options(g), similar(y))
-prox(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}, options::AbstractProximableOptions) where {T<:Real,N,CT<:RealOrComplex{T}} = prox!(y, λ, g, options, similar(y))
+prox(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = prox!(y, λ, g, options(g), similar(y))
+prox(y::AbstractArray{CT,N}, λ::T, g::AbstractProximableFunction{CT,N}, options::AbstractArgminOptions) where {T<:Real,N,CT<:RealOrComplex{T}} = prox!(y, λ, g, options, similar(y))
 prox!(y::AT, λ::T, g::AbstractProximableFunction{CT,N}, x::AT) where {T<:Real,N,CT<:RealOrComplex{T},AT<:AbstractArray{CT,N}} = prox!(y, λ, g, options(g), x)
 
 proj(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}) where {T<:Real,N,CT<:RealOrComplex{T}} = proj!(y, ε, g, options(g), similar(y))
-proj(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}, options::AbstractProximableOptions) where {T<:Real,N,CT<:RealOrComplex{T}} = proj!(y, ε, g, options, similar(y))
+proj(y::AbstractArray{CT,N}, ε::T, g::AbstractProximableFunction{CT,N}, options::AbstractArgminOptions) where {T<:Real,N,CT<:RealOrComplex{T}} = proj!(y, ε, g, options, similar(y))
 proj!(y::AT, ε::T, g::AbstractProximableFunction{CT,N}, x::AT) where {T<:Real,N,CT<:RealOrComplex{T},AT<:AbstractArray{CT,N}} = proj!(y, ε, g, options(g), x)
 
-options(::AbstractProximableFunction) = exact_proxproj()
+options(::AbstractProximableFunction) = exact_argmin()
 
 
 ## Projection sets
 
 abstract type AbstractProjectionableSet{T,N} end
-abstract type AbstractProjectionableSetOptions end
 # Base.in(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}) where {T,N} = ...
-# proj!(x::AT, C::AbstractProjectionableSet{T,N}, options::AbstractProjectionableSetOptions, y::AT) where {T,N,AT<:AbstractArray{T,N}} = ...
+# proj!(x::AT, C::AbstractProjectionableSet{T,N}, options::AbstractArgminOptions, y::AT) where {T,N,AT<:AbstractArray{T,N}} = ...
 
 proj(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}) where {T,N} = proj!(x, C, options(C), similar(x))
-proj(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, options::AbstractProjectionableSetOptions) where {T,N} = proj!(x, C, options, similar(x))
+proj(x::AbstractArray{T,N}, C::AbstractProjectionableSet{T,N}, options::AbstractArgminOptions) where {T,N} = proj!(x, C, options, similar(x))
 proj!(x::AT, C::AbstractProjectionableSet{T,N}, y::AT) where {T,N,AT<:AbstractArray{T,N}} = proj!(x, C, options(C), y)
 
-options(::AbstractProjectionableSet) = exact_projset()
+options(C::AbstractProjectionableSet) = exact_argmin()
 
 
 ## Differentiable functions

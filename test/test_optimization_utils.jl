@@ -1,4 +1,4 @@
-using ConvexOptimizationUtils, LinearAlgebra, Test, AbstractLinearOperators
+using AbstractProximableFunctions, LinearAlgebra, Test, AbstractLinearOperators
 
 rtol = 1e-5
 
@@ -10,13 +10,13 @@ b = randn(T, 100)
 xtrue = A\b
 
 # Via minimize routine
-g = zero_proxproj(T, 1)
+g = zero_prox(T, 1)
 x0 = randn(T, 100)
 L = T(1.1)*spectral_radius(A'*A; niter=100)
 niter = 100
 Nesterov = true
 # Nesterov = false
-opt_fista = FISTA(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false, fun_history=true)
+opt_fista = FISTA_options(L; Nesterov=Nesterov, niter=niter, reset_counter=10, verbose=false, fun_history=true)
 Aop = linear_operator(T, size(xtrue), size(xtrue), x->A*x, y->A'*y)
 f = leastsquares_misfit(Aop, b)
 x = argmin(f+g, x0, opt_fista)

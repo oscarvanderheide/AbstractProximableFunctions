@@ -1,4 +1,4 @@
-using LinearAlgebra, ConvexOptimizationUtils, AbstractLinearOperators, Test, Random
+using LinearAlgebra, AbstractProximableFunctions, AbstractLinearOperators, Test, Random
 Random.seed!(123)
 
 # Random input

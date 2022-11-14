@@ -1,4 +1,4 @@
-using LinearAlgebra, ConvexOptimizationUtils, Test, Random
+using LinearAlgebra, AbstractProximableFunctions, Test, Random
 Random.seed!(123)
 
 T = Complex{Float64}
