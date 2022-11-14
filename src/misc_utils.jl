@@ -33,4 +33,5 @@ end
 
 set_options(op::DiffPlusProxFunction, options::AbstractArgminOptions) = +(op.diff, op.prox; options=options)
 set_options(op::ProxPlusIndicator, options::AbstractArgminOptions) = +(op.prox, op.indicator; options=options)
+set_options(op::WeightedProximableFunction, options::AbstractArgminOptions) = weighted_prox(op.prox, op.linear_operator; options=options)
 set_options(op::WeightedProxPlusIndicator, options::AbstractArgminOptions) = +(op.wprox, op.indicator; options=options)
