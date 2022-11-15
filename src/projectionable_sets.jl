@@ -34,3 +34,5 @@ Base.:≤(g::AbstractProximableFunction{CT,N}, ε::T) where {T<:Real,N,CT<:RealO
 Base.in(x::AbstractArray{T,N}, C::SublevelSet{T,N}) where {T<:RealOrComplex,N} = C.fun(x) ≤ C.level
 
 proj!(x::AbstractArray{T,N}, C::SublevelSet{T,N}, options::AbstractArgminOptions, y::AbstractArray{T,N}) where {T,N} = proj!(x, C.level, C.fun, options, y)
+
+options(C::SublevelSet) = options(C.fun)
