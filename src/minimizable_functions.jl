@@ -36,7 +36,7 @@ Base.:+(g::AbstractProximableFunction{T,N}, f::AbstractDifferentiableFunction{T,
 ## FISTA options
 
 struct ArgminFISTA<:AbstractArgminOptions
-    Lipschitz_constant::Real
+    Lipschitz_constant::Union{Nothing,Real}
     Nesterov::Bool
     reset_counter::Union{Nothing,Integer}
     niter::Union{Nothing,Integer}
@@ -44,13 +44,13 @@ struct ArgminFISTA<:AbstractArgminOptions
     fun_history::Union{Nothing,AbstractVector{<:Real}}
 end
 
-function FISTA_options(L::T;
+function FISTA_options(L::Union{Nothing,Real};
                Nesterov::Bool=true,
                reset_counter::Union{Nothing,Integer}=nothing,
                niter::Union{Nothing,Integer}=nothing,
                verbose::Bool=false,
-               fun_history::Bool=false) where {T<:Real}
-    (fun_history && ~isnothing(niter)) ? (fval = Array{T,1}(undef,niter)) : (fval = nothing)
+               fun_history::Bool=false)
+    (fun_history && ~isnothing(niter)) ? (fval = Array{typeof(L),1}(undef,niter)) : (fval = nothing)
     return ArgminFISTA(L, Nesterov, reset_counter, niter, verbose, fval)
 end
 
