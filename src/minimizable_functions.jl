@@ -45,12 +45,13 @@ struct ArgminFISTA<:AbstractArgminOptions
 end
 
 function FISTA_options(L::Union{Nothing,Real};
-               Nesterov::Bool=true,
-               reset_counter::Union{Nothing,Integer}=nothing,
-               niter::Union{Nothing,Integer}=nothing,
-               verbose::Bool=false,
-               fun_history::Bool=false)
-    (fun_history && ~isnothing(niter)) ? (fval = Array{typeof(L),1}(undef,niter)) : (fval = nothing)
+                       Nesterov::Bool=true,
+                       reset_counter::Union{Nothing,Integer}=nothing,
+                       niter::Union{Nothing,Integer}=nothing,
+                       verbose::Bool=false,
+                       fun_history::Bool=false)
+    isnothing(L) ? (T = Real) : (T = typeof(L))
+    (fun_history && ~isnothing(niter)) ? (fval = Array{T,1}(undef,niter)) : (fval = nothing)
     return ArgminFISTA(L, Nesterov, reset_counter, niter, verbose, fval)
 end
 
