@@ -89,18 +89,18 @@ function argmin!(fun::DiffPlusProxFunction{CT,N}, x::AT, options::ArgminFISTA) w
         options.verbose && (@info string("Iter: ", i, ", fval: ", fval_i))
 
         # Update
-        # x_grad .= x.-g./L
-        g ./= L
-        x_grad .= x; x_grad .-= g
+        x_grad .= x-g/L
+        # g ./= L
+        # x_grad .= x; x_grad .-= g
         prox!(x_grad, 1/L, prox_fun, x_)
 
         # Nesterov acceleration
         if options.Nesterov
             t = (1+sqrt(1+4*t0^2))/2
-            # x .= x_+(t0-1)/t*(x_-x)
-            x_ .*= (t+t0-1)/t
-            x .*= (1-t0)/t
-            x .+= x_
+            x .= x_+(t0-1)/t*(x_-x)
+            # x_ .*= (t+t0-1)/t
+            # x .*= (1-t0)/t
+            # x .+= x_
             t0 = t
             ~isnothing(counter) && (counter += 1)
 
