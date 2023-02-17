@@ -12,7 +12,7 @@ version = "1.2.1"
 
 [[deps.AbstractLinearOperators]]
 deps = ["Flux", "LinearAlgebra"]
-git-tree-sha1 = "0213f3f205dd35da8495be90c397632eb20af25e"
+git-tree-sha1 = "7a64da75000100ec22585916aa0a07fbe090ed13"
 repo-rev = "main"
 repo-url = "https://github.com/grizzuti/AbstractLinearOperators.git"
 uuid = "bb902dec-a34b-4f3c-9707-4856bea60ee0"
