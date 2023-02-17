@@ -2,7 +2,7 @@
 
 julia_version = "1.8.5"
 manifest_format = "2.0"
-project_hash = "ceca2b5860d514852e2c2430b64c493c2c870b6d"
+project_hash = "b55f567d507f0d39d3a41c1a7e740e4dd2d22d4a"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -12,11 +12,11 @@ version = "1.2.1"
 
 [[deps.AbstractLinearOperators]]
 deps = ["Flux", "LinearAlgebra"]
-git-tree-sha1 = "ce098cbe8dc27f6872d3963d61191a783c8b699e"
+git-tree-sha1 = "0a0f303587a1ef8f3f5fd42320268dec5be49bc1"
 repo-rev = "main"
 repo-url = "https://github.com/grizzuti/AbstractLinearOperators.git"
 uuid = "bb902dec-a34b-4f3c-9707-4856bea60ee0"
-version = "0.1.0"
+version = "0.0.0"
 
 [[deps.Accessors]]
 deps = ["Compat", "CompositionsBase", "ConstructionBase", "Dates", "InverseFunctions", "LinearAlgebra", "MacroTools", "Requires", "StaticArrays", "Test"]

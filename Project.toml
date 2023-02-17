@@ -1,7 +1,6 @@
 name = "AbstractProximableFunctions"
 uuid = "9ed10759-246d-4065-822b-90d32585fe69"
 authors = ["Gabrio Rizzuti <rizzuti.gabrio@gmail.com>"]
-version = "0.1.0"
 
 [deps]
 AbstractLinearOperators = "bb902dec-a34b-4f3c-9707-4856bea60ee0"
@@ -10,7 +9,6 @@ Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 
 [compat]
 julia = "1.8"
-AbstractLinearOperators = "0.1.0"
 
 [extras]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
