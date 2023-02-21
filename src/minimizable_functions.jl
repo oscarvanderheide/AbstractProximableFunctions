@@ -18,6 +18,11 @@ proj!(::AT, ::AbstractProjectionableSet{T,N}, ::AbstractArgminOptions, ::AT) whe
 
 struct ExactArgmin<:AbstractArgminOptions end
 
+"""
+    exact_argmin()
+
+Returns default optimization options for the computation of proximal/projection operators. It might results in an error if the regularization functional does not implement analytically-defined proximal/projection operators (e.g. TV!).
+"""
 exact_argmin() = ExactArgmin()
 
 
