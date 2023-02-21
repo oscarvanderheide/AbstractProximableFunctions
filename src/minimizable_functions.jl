@@ -49,6 +49,25 @@ struct ArgminFISTA<:AbstractArgminOptions
     fun_history::Union{Nothing,AbstractVector{<:Real}}
 end
 
+"""
+    FISTA_options(L; Nesterov=true,
+                     reset_counter=nothing,
+                     niter=nothing,
+                     verbose=false,
+                     fun_history=false)
+
+Returns FISTA iterative solver options for the general optimization problem:
+
+``\\min_{\\mathbf{x}}f(\\mathbf{x})+g(\\mathbf{x})``
+
+where ``g`` is a "proximable" function.
+
+The main parameter ``L`` ideally should be chosen as ``L\\ge||\\nabla f||_{\\infty}`` and is problem specific.
+
+Nesterov acceleration is set by `Nesterov=true`, while `reset_counter` is the number of iteration after which the Nesterov momentum is reset. The total number of iterations is determined by `niter`.
+
+For debugging, set `verbose=true` and/or `fun_history=true` (the latter allows storing the history of ``f(\\mathbf{x})``, which can be retrieved by `fun_history(options)` after minimization).
+"""
 function FISTA_options(L::Union{Nothing,Real};
                        Nesterov::Bool=true,
                        reset_counter::Union{Nothing,Integer}=nothing,
