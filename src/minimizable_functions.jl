@@ -21,7 +21,7 @@ struct ExactArgmin<:AbstractArgminOptions end
 """
     exact_argmin()
 
-Returns default optimization options for the computation of proximal/projection operators. It might results in an error if the regularization functional does not implement analytically-defined proximal/projection operators (e.g. TV!).
+Returns exact optimization options for the computation of proximal/projection operators. It might results in an error if the regularization functional does not implement analytically-defined proximal/projection operators (e.g. TV!).
 """
 exact_argmin() = ExactArgmin()
 
@@ -60,13 +60,17 @@ Returns FISTA iterative solver options for the general optimization problem:
 
 ``\\min_{\\mathbf{x}}f(\\mathbf{x})+g(\\mathbf{x})``
 
-where ``g`` is a "proximable" function.
+where ``g`` is a "proximable" function. It can be used to define options for the proximal or projection operators.
 
-The main parameter ``L`` ideally should be chosen as ``L\\ge||\\nabla f||_{\\infty}`` and is problem specific.
+The parameter ``L`` ideally should be chosen as ``L\\ge\\mathrm{Lip}\\nabla f`` (=Lipschitz constant of the gradient) and is problem specific.
 
 Nesterov acceleration is set by `Nesterov=true`, while `reset_counter` is the number of iteration after which the Nesterov momentum is reset. The total number of iterations is determined by `niter`.
 
 For debugging, set `verbose=true` and/or `fun_history=true` (the latter allows storing the history of ``f(\\mathbf{x})``, which can be retrieved by `fun_history(options)` after minimization).
+
+## Important note
+
+When setting the options for proximal or projection operators, follow the recommendations for each specific proximal function on how to choose ``L``. The underlying optimization may be based on algebraic reformulations of the optimization problem ``\\min_{\\mathbf{x}}1/2||\\mathbf{x}-\\mathbf{y}||^2+\\lambda{}g(\\mathbf{x})``, so the assumption that ``f(\\mathbf{x})=1/2||\\mathbf{x}-\\mathbf{y}||^2`` is not generally correct. This note is relevant when computing the proximal operator of `WeightedProximalFunction`'s for which the problem ``\\min_{\\mathbf{x}}1/2||\\mathbf{x}-\\mathbf{y}||^2+\\lambda{}g(A\\mathbf{x})`` is transformed to ``\\min_{\\mathbf{p}}1/2||\\lambda A^*\\mathbf{p}-\\mathbf{y}||^2+\\lambda g^*(\\mathbf{p})``. The Lipschitz constant in this case should be ``\\lambda^2\\rho(A)``. For convenience of use, however, the Lipschitz constant is expected to be just ``\\rho(A)``.
 """
 function FISTA_options(L::Union{Nothing,Real};
                        Nesterov::Bool=true,

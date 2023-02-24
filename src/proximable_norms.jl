@@ -9,6 +9,13 @@ struct ProximableNorm{T,N,P}<:AbstractProximableFunction{T,N}
     pareto_tol::Union{Nothing,Real}
 end
 
+"""
+    LinearAlgebra.norm(T::DataType, N::Number, P::Number)
+
+Return the proximable function ``g(\\mathbf{x})=||\\mathbf{x}||_p`` where ``p\\in\\{1,2,\\infty\\}``.
+
+Must specify the element type ``T`` and array dimension ``N`` of the input array.
+"""
 LinearAlgebra.norm(T::DataType, N::Number, P::Number; pareto_tol::Union{Nothing,Real}=nothing) = ProximableNorm{T,N,P}(pareto_tol)
 
 funeval(::ProximableNorm{T,N,P}, x::AbstractArray{T,N}) where {T,N,P} = norm(x, P)
@@ -65,6 +72,11 @@ struct ProximableMixedNorm{T,D,N1,N2}<:AbstractProximableFunction{T,D}
     pareto_tol::Union{Nothing,Real}
 end
 
+"""
+    mixed_norm(T::DataType, D::Number, N1::Number, N2::Number)
+
+Return the mixed-norm proximable function. For a `D+1`-dimensional input array ``\\mathbf{x}_{i_1,\\ldots,i_D}{}^{i_{D+1}}``, it represents the functional ``g(\\mathbf{x})=||(i_1,\\ldots,i_D)\\mapsto||\\mathbf{x}_{i_1,\\ldots,i_D}{}^:||_{\\ell^{N_1}}||_{\\ell^{N_2}}``. Implementations are available for ``N_1=2``, ``N_2\\in\\{1,2,\\infty\\}``.
+"""
 mixed_norm(T::DataType, D::Number, N1::Number, N2::Number; pareto_tol::Union{Nothing,Real}=nothing) = ProximableMixedNorm{T,D+1,N1,N2}(pareto_tol)
 
 
