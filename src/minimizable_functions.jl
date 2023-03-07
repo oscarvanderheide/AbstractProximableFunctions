@@ -93,9 +93,9 @@ function argmin!(fun::DiffPlusProxFunction{CT,N}, x::AT, options::ArgminFISTA) w
     # - FISTA: Beck, A., and Teboulle, M., 2009, A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems
 
     # Initialization
-    x_ = similar(x)
-    g  = x_
-    x_grad = similar(x)
+    options.Nesterov ? (x_ = similar(x)) : (x_ = x)
+    xprev_ = deepcopy(x)
+    gradient = similar(x)
     L = T(Lipschitz_constant(options))
     isnothing(options.reset_counter) ? (counter = nothing) : (counter = 0)
     t0 = T(1)
@@ -103,29 +103,31 @@ function argmin!(fun::DiffPlusProxFunction{CT,N}, x::AT, options::ArgminFISTA) w
     prox_fun = fun.prox
 
     # Optimization loop
-    @inbounds for i = 1:options.niter
+    @inbounds for n = 1:options.niter
 
         # Compute gradient
         if options.verbose || ~isnothing(fun_history(options))
-            fval_i = fungradeval!(diff_fun, x, g)
+            fval_n = fungradeval!(diff_fun, x, gradient)
         else
-            gradeval!(diff_fun, x, g)
+            gradeval!(diff_fun, x, gradient)
         end
-        ~isnothing(fun_history(options)) && (fun_history(options)[i] = fval_i)
+        ~isnothing(fun_history(options)) && (fun_history(options)[n] = fval_n)
 
         # Print current iteration
-        options.verbose && (@info string("Iter: ", i, ", fval: ", fval_i))
+        options.verbose && (@info string("Iter: ", n, ", fval: ", fval_n))
 
         # Update
-        x_grad .= x-g/L
-        prox!(x_grad, 1/L, prox_fun, x_)
+        prox!(x-gradient/L, 1/L, prox_fun, x_)
 
         # Nesterov acceleration
         if options.Nesterov
             t = (1+sqrt(1+4*t0^2))/2
-            x .= x_+(t0-1)/t*(x_-x)
-            t0 = t
+            (n == 1) ? (x .= x_) : (x .= x_+(t0-1)/t*(x_-xprev_))
             ~isnothing(counter) && (counter += 1)
+
+            # Update
+            t0 = t
+            xprev_ .= x_
 
             # Reset momentum
             ~isnothing(options.reset_counter) && (counter >= options.reset_counter) && (t0 = T(1))
