@@ -9,14 +9,15 @@ LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 
 [compat]
-julia = "1.8 - 1.10"
+julia = "1.11"
 
 [extras]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [sources]
-AbstractLinearOperators = {url = "https://github.com/grizzuti/AbstractLinearOperators.jl"}
+AbstractLinearOperators = { url = "https://github.com/oscarvanderheide/AbstractLinearOperators.jl" }
 
 [targets]
 test = ["Test", "Random"]
+
